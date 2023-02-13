@@ -24,7 +24,7 @@ env:
 
 jobs:
   verify-code-formatting:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
           cargo fmt --check
 
   workflow-setup:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       PUBLISH_VERSION: ${{ steps.run-info.outputs.publish-version }}
       RELEASE: ${{ steps.run-info.outputs.release }}
@@ -85,7 +85,7 @@ jobs:
           echo "DOCKER_IMG_CACHED_ANDROID=$DOCKER_REPO_LOCAL_ANDROID:$HASH_DOCKER_ANDROID" >> $GITHUB_OUTPUT
 
   clippy-aries-vcx:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -103,7 +103,7 @@ jobs:
           cd aries_vcx && cargo clippy
 
   clippy-libvcx:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -125,7 +125,7 @@ jobs:
 
   build-docker-alpine-core:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       DOCKER_IMG_CACHED: ${{ needs.workflow-setup.outputs.DOCKER_IMG_CACHED_ALPINE_CORE }}
       BRANCH_NAME: ${{ needs.workflow-setup.outputs.BRANCH_NAME }}
@@ -150,7 +150,7 @@ jobs:
 
   build-docker-libvcx:
     needs: [ workflow-setup, build-docker-alpine-core ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       DOCKER_IMG_CACHED: ${{ needs.workflow-setup.outputs.DOCKER_IMG_CACHED_LIBVCX }}
       DOCKER_IMG_CACHED_ALPINE_CORE: ${{ needs.workflow-setup.outputs.DOCKER_IMG_CACHED_ALPINE_CORE }}
@@ -180,7 +180,7 @@ jobs:
 
   build-docker-android:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       DOCKER_IMG_CACHED: ${{needs.workflow-setup.outputs.DOCKER_IMG_CACHED_ANDROID}}
       BRANCH_NAME: ${{ needs.workflow-setup.outputs.BRANCH_NAME }}
@@ -208,7 +208,7 @@ jobs:
 #  #  ##############################   DOCKER PUBLISH   ########################################
 
   publish-docker-libvcx:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, build-docker-libvcx ]
     env:
       DOCKER_IMG_CACHED: ${{ needs.workflow-setup.outputs.DOCKER_IMG_CACHED_LIBVCX }}
@@ -238,7 +238,7 @@ jobs:
 
   code-coverage-aries-vcx-unit-tests:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -269,7 +269,7 @@ jobs:
 
   code-coverage-aries-vcx-integration-tests:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -299,7 +299,7 @@ jobs:
   #TODO - can this be included within code-coverage-aries-vcx-integration-tests?
   code-coverage-aries-vcx-modular-dependencies-integration-tests:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -331,7 +331,7 @@ jobs:
 
   test-unit-workspace:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -344,7 +344,7 @@ jobs:
 
   test-integration-aries-vcx:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -355,7 +355,7 @@ jobs:
 
   test-integration-aries-vcx-mysql:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -366,7 +366,7 @@ jobs:
 
   test-integration-libvcx:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -416,7 +416,7 @@ jobs:
         run: (cd agents/node/vcxagent-core && AGENCY_URL=http://localhost:8080 npm run test:integration)
 
   test-android-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, build-docker-android ]
     env:
       DOCKER_IMG_CACHED_ANDROID: ${{needs.workflow-setup.outputs.DOCKER_IMG_CACHED_ANDROID}}
@@ -508,7 +508,7 @@ jobs:
           path: /tmp/artifacts/libvcx-ios-legacy-${{ env.PUBLISH_VERSION }}-universal.zip
 
   build-and-publish-android-device:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, build-docker-android ]
     env:
       FULL_VERSION_NAME: libvcx-android-${{needs.workflow-setup.outputs.PUBLISH_VERSION}}-device
@@ -542,7 +542,7 @@ jobs:
           path: /tmp/artifacts/aar/${{ env.FULL_VERSION_NAME }}.aar
 
   build-and-publish-android-emulator:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, build-docker-android ]
     env:
       FULL_VERSION_NAME: libvcx-android-${{needs.workflow-setup.outputs.PUBLISH_VERSION}}-emulator
@@ -576,7 +576,7 @@ jobs:
 
   build-and-publish-ubuntu-lib:
     needs: workflow-setup
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: "Git checkout"
         uses: actions/checkout@v3
@@ -625,7 +625,7 @@ jobs:
 #  #  ############################   NPMJS PUBLISHING   #######################################
 
   publish-node-wrapper:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - workflow-setup
       - test-unit-workspace
@@ -653,7 +653,7 @@ jobs:
           fi
 
   publish-agent-core:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - workflow-setup
       - test-unit-workspace
@@ -690,7 +690,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: ubuntu-20.04
+          - host: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             build: |-
               set -e
@@ -698,7 +698,7 @@ jobs:
               sudo apt-get install -y libssl-dev libzmq3-dev
               npm run build:napi -- --target x86_64-unknown-linux-gnu
               strip *.node
-          - host: ubuntu-20.04
+          - host: ubuntu-22.04
             target: x86_64-unknown-linux-musl
             docker: ghcr.io/hyperledger/aries-vcx/napi-rs-alpine
             build: |-
@@ -750,7 +750,7 @@ jobs:
           rust-version: ${{ env.RUST_TOOLCHAIN_VERSON }}
 
   publish-napi:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - workflow-setup
       - build-napi
@@ -766,7 +766,7 @@ jobs:
   #  ##############################      RELEASE      #########################################
 
   make-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - workflow-setup
       - build-and-publish-ios-wrapper
@@ -828,7 +828,7 @@ jobs:
           prerelease: ${{ needs.workflow-setup.outputs.PRERELEASE == 'true' }}
 
   release-android-device:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, make-release ]
     steps:
       - name: "Fetch android device build from artifacts"
@@ -846,7 +846,7 @@ jobs:
           asset_content_type: application/aar
 
   release-android-emulator:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, make-release ]
     steps:
       - name: "Fetch android emulator build from artifacts"
@@ -864,7 +864,7 @@ jobs:
           asset_content_type: application/aar
 
   release-ios-device:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, make-release ]
     steps:
       - name: "Fetch iOS device build from artifacts"
@@ -882,7 +882,7 @@ jobs:
           asset_content_type: application/zip
 
   release-ios-legacy-device:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, make-release ]
     steps:
       - name: "Fetch iOS device build from artifacts"
@@ -900,7 +900,7 @@ jobs:
           asset_content_type: application/zip
 
   release-ios-universal:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, make-release ]
     steps:
       - name: "Fetch iOS universal build from artifacts"
@@ -918,7 +918,7 @@ jobs:
           asset_content_type: application/zip
 
   release-ios-legacy-universal:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ workflow-setup, make-release ]
     steps:
       - name: "Fetch iOS universal build from artifacts"
