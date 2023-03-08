@@ -1,25 +1,33 @@
 use std::sync::Arc;
 
 use messages::{
-    a2a::{A2AMessage, MessageId},
+    a2a::A2AMessage,
     concepts::problem_report::ProblemReport,
-    protocols::issuance::{
-        credential::Credential,
-        credential_offer::CredentialOffer,
-        credential_proposal::{CredentialProposal, CredentialProposalData},
+    protocols::{
+        issuance::{credential_offer::CredentialOffer, credential_proposal::CredentialProposal},
+        revocation_notification::revocation_notification::RevocationNotification,
     },
 };
 
 use crate::{
-    core::profile::profile::Profile, errors::error::VcxResult, handlers::util::verify_thread_id, protocols::SendClosure,
+    common::credentials::{get_cred_rev_id, is_cred_revoked},
+    core::profile::profile::Profile,
+    errors::error::{AriesVcxError, AriesVcxErrorKind, VcxResult},
+    handlers::revocation_notification::receiver::RevocationNotificationReceiver,
+    protocols::SendClosure,
 };
 
-use self::states::{
-    failed::Failed, finished::Finished, initial::Initial, offer_received::OfferReceived, proposal_sent::ProposalSent,
-    request_sent::RequestSent,
+use self::{
+    states::{
+        failed::Failed, finished::Finished, offer_received::OfferReceived, proposal_sent::ProposalSent,
+        request_sent::RequestSent,
+    },
+    trait_bounds::{GetAttachment, GetAttributes, IsTerminalState},
 };
 
 pub mod states;
+pub mod trait_bounds;
+pub mod transitions;
 
 pub struct Holder<S> {
     source_id: String,
@@ -27,138 +35,135 @@ pub struct Holder<S> {
     state: S,
 }
 
-impl Holder<Initial> {
-    pub fn create(source_id: String) -> Self {
-        let thread_id = MessageId::new().0;
-        Holder {
-            source_id,
-            thread_id,
-            state: Initial,
-        }
-    }
-
-    pub async fn send_proposal(
-        self,
-        proposal_data: CredentialProposalData,
-        send_message: SendClosure,
-    ) -> VcxResult<Holder<ProposalSent>> {
-        // send proposal where ID is the thread_id (as this is the first msg in the protocol)
-        let proposal = CredentialProposal::from(proposal_data).set_id(&self.thread_id);
-        self.send_proposal_message(proposal, send_message).await
-    }
-}
-
 impl Holder<ProposalSent> {
-    pub fn receive_offer(self, credential_offer: CredentialOffer) -> VcxResult<Holder<OfferReceived>> {
-        verify_thread_id(&self.thread_id, &A2AMessage::CredentialOffer(credential_offer.clone()))?;
-
-        Ok(Holder {
-            source_id: self.source_id,
-            thread_id: self.thread_id,
-            state: OfferReceived::new(credential_offer),
-        })
-    }
-
-    pub fn receive_problem_report(self, problem_report: ProblemReport) -> Holder<Failed> {
-        self.receive_problem_report_message(problem_report)
+    pub async fn is_revokable(&self, profile: &Arc<dyn Profile>) -> VcxResult<bool> {
+        self.state.is_revokable(profile).await
     }
 }
 
 impl Holder<OfferReceived> {
-    pub fn create_from_offer(source_id: String, credential_offer: CredentialOffer) -> Self {
-        let thread_id = credential_offer.get_thread_id();
-        Self {
-            source_id,
-            thread_id,
-            state: OfferReceived::new(credential_offer),
-        }
+    pub fn get_offer(&self) -> CredentialOffer {
+        self.state.offer.clone()
     }
 
-    pub async fn send_proposal(
-        self,
-        proposal_data: CredentialProposalData,
-        send_message: SendClosure,
-    ) -> VcxResult<Holder<ProposalSent>> {
-        // send proposal where ID is the existing thread_id (as this is not the first msg in the protocol)
-        let proposal = CredentialProposal::from(proposal_data).set_thread_id(&self.thread_id);
-        self.send_proposal_message(proposal, send_message).await
-    }
-
-    pub async fn send_request(
-        self,
-        _profile: &Arc<dyn Profile>,
-        _prover_did: String,
-        _send_message: SendClosure,
-    ) -> VcxResult<Holder<RequestSent>> {
-        let state = RequestSent::new(todo!(), todo!());
-        Ok(Holder {
-            source_id: self.source_id,
-            thread_id: self.thread_id,
-            state,
-        })
-    }
-
-    pub async fn decline_offer(self, comment: Option<String>, send_message: SendClosure) -> VcxResult<Holder<Failed>> {
-        // build problem report
-        let problem_report = todo!();
-        // send..
-
-        let state = Failed::new(problem_report);
-        Ok(Holder {
-            source_id: self.source_id,
-            thread_id: self.thread_id,
-            state,
-        })
+    pub async fn is_revokable(&self, profile: &Arc<dyn Profile>) -> VcxResult<bool> {
+        self.state.is_revokable(profile).await
     }
 }
 
 impl Holder<RequestSent> {
-    pub async fn receive_credential(
-        self,
-        profile: &Arc<dyn Profile>,
-        credential: Credential,
-        send_message: SendClosure,
-    ) -> VcxResult<Holder<Finished>> {
-        // store cred...
-        let (cred_id, rev_reg_def_json) = todo!(); // send ack...
-
-        let state = Finished::new(cred_id, credential, rev_reg_def_json);
-        Ok(Holder {
-            source_id: self.source_id,
-            thread_id: self.thread_id,
-            state,
-        })
-    }
-
-    pub fn receive_problem_report(self, problem_report: ProblemReport) -> Holder<Failed> {
-        self.receive_problem_report_message(problem_report)
+    pub fn is_revokable(&self) -> VcxResult<bool> {
+        self.state.is_revokable()
     }
 }
 
-impl Holder<Finished> {}
-
-impl<S> Holder<S> {
-    /// Internal only, used by both initial and offerreceived states
-    async fn send_proposal_message(
-        self,
-        proposal: CredentialProposal,
-        send_message: SendClosure,
-    ) -> VcxResult<Holder<ProposalSent>> {
-        send_message(proposal.to_a2a_message()).await?;
-
-        let state = ProposalSent::new(proposal);
-        Ok(Holder {
-            source_id: self.source_id,
-            thread_id: self.thread_id,
-            state,
-        })
+impl Holder<Finished> {
+    // cred_id and credential as a2a message?
+    pub fn get_credential(&self) -> (String, A2AMessage) {
+        (self.state.cred_id.clone(), self.state.credential.to_a2a_message())
     }
 
-    pub fn receive_problem_report_message(self, problem_report: ProblemReport) -> Holder<Failed> {
-        Holder {
-            source_id: self.source_id,
-            thread_id: self.thread_id,
-            state: Failed::new(problem_report),
+    pub fn get_tails_location(&self) -> VcxResult<String> {
+        self.state.get_tails_location()
+    }
+
+    pub fn get_tails_hash(&self) -> VcxResult<String> {
+        self.state.get_tails_hash()
+    }
+
+    pub fn get_rev_reg_id(&self) -> VcxResult<String> {
+        self.state.get_rev_reg_id()
+    }
+
+    pub fn get_cred_id(&self) -> String {
+        self.state.cred_id.clone()
+    }
+
+    pub fn is_revokable(&self) -> bool {
+        self.state.is_revokable()
+    }
+
+    pub async fn is_revoked(&self, profile: &Arc<dyn Profile>) -> VcxResult<bool> {
+        if self.is_revokable() {
+            let rev_reg_id = self.get_rev_reg_id()?;
+            let cred_id = self.get_cred_id();
+            let rev_id = get_cred_rev_id(profile, &cred_id).await?;
+            is_cred_revoked(profile, &rev_reg_id, &rev_id).await
+        } else {
+            Err(AriesVcxError::from_msg(
+                AriesVcxErrorKind::InvalidState,
+                "Unable to check revocation status - this credential is not revokable",
+            ))
         }
+    }
+
+    pub async fn delete_credential(&self, profile: &Arc<dyn Profile>) -> VcxResult<()> {
+        let cred_id = self.get_cred_id();
+        trace!("Holder::delete_credential >>> cred_id: {}", cred_id);
+
+        let anoncreds = Arc::clone(profile).inject_anoncreds();
+        anoncreds.prover_delete_credential(&cred_id).await
+    }
+
+    pub async fn get_cred_rev_id(&self, profile: &Arc<dyn Profile>) -> VcxResult<String> {
+        get_cred_rev_id(profile, &self.get_cred_id()).await
+    }
+
+    pub async fn handle_revocation_notification(
+        &self,
+        profile: &Arc<dyn Profile>,
+        notification: RevocationNotification,
+        send_message: SendClosure,
+    ) -> VcxResult<()> {
+        if self.is_revokable() {
+            // TODO: Store to remember notification was received along with details
+            RevocationNotificationReceiver::build(self.get_rev_reg_id()?, self.get_cred_rev_id(profile).await?)
+                .handle_revocation_notification(notification, send_message)
+                .await?;
+            Ok(())
+        } else {
+            Err(AriesVcxError::from_msg(
+                AriesVcxErrorKind::InvalidState,
+                "Unexpected revocation notification, credential is not revokable".to_string(),
+            ))
+        }
+    }
+}
+
+// generic methods
+impl<S> Holder<S> {
+    pub fn source_id(&self) -> &str {
+        &self.source_id
+    }
+
+    pub fn thread_id(&self) -> &str {
+        &self.thread_id
+    }
+}
+
+impl<S> Holder<S>
+where
+    S: GetAttributes,
+{
+    pub fn get_attributes(&self) -> VcxResult<String> {
+        self.state.get_attributes()
+    }
+}
+
+impl<S> Holder<S>
+where
+    S: GetAttachment,
+{
+    pub fn get_attachment(&self) -> VcxResult<String> {
+        self.state.get_attachment()
+    }
+}
+
+impl<S> Holder<S>
+where
+    S: IsTerminalState,
+{
+    pub fn is_terminal_state(&self) -> bool {
+        self.state.is_terminal_state()
     }
 }
