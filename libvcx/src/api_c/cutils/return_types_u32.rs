@@ -1,22 +1,21 @@
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::ops::Deref;
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::RecvTimeoutError;
-use std::sync::Mutex;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    ops::Deref,
+    sync::{
+        mpsc::{channel, Receiver, RecvTimeoutError},
+        Mutex,
+    },
+    time::Duration,
+};
 
+use aries_vcx::{indy::utils::next_command_handle, vdrtools::CommandHandle};
 use libc::c_char;
 
-use crate::errors::error;
-use crate::errors::mapping_ffi_tests::map_indy_error;
-use aries_vcx::indy::utils::next_command_handle;
-use aries_vcx::vdrtools::CommandHandle;
-
-use crate::api_c::cutils::callback::POISON_MSG;
-use crate::api_c::cutils::callback_u32 as callback;
-use crate::api_c::cutils::timeout::TimeoutUtils;
+use crate::{
+    api_c::cutils::{callback::POISON_MSG, callback_u32 as callback, timeout::TimeoutUtils},
+    errors::{error, mapping_ffi_tests::map_indy_error},
+};
 
 fn log_error<T: Display>(e: T) {
     warn!("Unable to send through libindy callback in vcx: {}", e);
@@ -394,8 +393,7 @@ impl Return_U32_U32_STR_STR_STR {
 #[cfg(test)]
 #[cfg(feature = "general_test")]
 mod tests {
-    use std::ffi::CString;
-    use std::ptr;
+    use std::{ffi::CString, ptr};
 
     use super::*;
 

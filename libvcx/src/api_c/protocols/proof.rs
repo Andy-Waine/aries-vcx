@@ -3,13 +3,17 @@ use std::ptr;
 use futures::future::BoxFuture;
 use libc::c_char;
 
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::set_current_error_vcx;
-use crate::api_c::cutils::runtime::execute_async;
-use crate::api_c::types::CommandHandle;
-use crate::api_vcx::api_handle::proof;
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
+use crate::{
+    api_c::{
+        cutils::{cstring::CStringUtils, current_error::set_current_error_vcx, runtime::execute_async},
+        types::CommandHandle,
+    },
+    api_vcx::api_handle::proof,
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 /*
     APIs in this module are called by a verifier throughout the request-proof-and-verify process.
@@ -61,15 +65,16 @@ use crate::errors::error::{LibvcxError, LibvcxErrorKind};
 /// requested_attrs: Describes requested attribute
 ///     {
 ///         "name": Optional<string>, // attribute name, (case insensitive and ignore spaces)
-///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore spaces)
-///                                              // NOTE: should either be "name" or "names", not both and not none of them.
-///                                              // Use "names" to specify several attributes that have to match a single credential.
-///         "restrictions":  Optional<wql query> - set of restrictions applying to requested credentials. (see below)
-///         "non_revoked": {
-///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
-///             "to": Optional<(u64)>
-///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
-///         }
+///         "names": Optional<[string, string]>, // attribute names, (case insensitive and ignore
+/// spaces)                                              // NOTE: should either be "name" or
+/// "names", not both and not none of them.                                              // Use
+/// "names" to specify several attributes that have to match a single credential.
+///         "restrictions":  Optional<wql query> - set of restrictions applying to requested
+/// credentials. (see below)         "non_revoked": {
+///             "from": Optional<(u64)> Requested time represented as a total number of seconds from
+/// Unix Epoch, Optional             "to": Optional<(u64)>
+///                 //Requested time represented as a total number of seconds from Unix Epoch,
+/// Optional         }
 ///     }
 ///
 /// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
@@ -79,11 +84,11 @@ use crate::errors::error::{LibvcxError, LibvcxErrorKind};
 ///             "name": attribute name, (case insensitive and ignore spaces)
 ///             "p_type": predicate type (Currently ">=" only)
 ///             "p_value": int predicate value
-///             "restrictions":  Optional<wql query> -  set of restrictions applying to requested credentials. (see below)
-///             "non_revoked": Optional<{
-///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
-///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
-///             }>
+///             "restrictions":  Optional<wql query> -  set of restrictions applying to requested
+/// credentials. (see below)             "non_revoked": Optional<{
+///                 "from": Optional<(u64)> Requested time represented as a total number of seconds
+/// from Unix Epoch, Optional                 "to": Optional<(u64)> Requested time represented as a
+/// total number of seconds from Unix Epoch, Optional             }>
 ///          },
 ///
 /// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
@@ -107,8 +112,9 @@ use crate::errors::error::{LibvcxError, LibvcxErrorKind};
 ///         "cred_def_id": <credential definition id>,
 ///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
 ///         // the following keys can be used for every `attribute name` in credential.
-///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific attribute
-///         "attr::<attribute name>::value": <attribute raw value>, - to filter based on value of a specific attribute
+///         "attr::<attribute name>::marker": "1", - to filter based on existence of a specific
+/// attribute         "attr::<attribute name>::value": <attribute raw value>, - to filter based on
+/// value of a specific attribute
 ///
 /// cb: Callback that provides proof handle and error status of request.
 ///
@@ -133,7 +139,16 @@ pub extern "C" fn vcx_proof_create(
     check_useful_c_str!(source_id, LibvcxErrorKind::InvalidOption);
     check_useful_c_str!(revocation_interval, LibvcxErrorKind::InvalidOption);
 
-    trace!("vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, revocation_interval: {}, name: {})", command_handle, source_id, requested_attrs, requested_predicates, revocation_interval, name);
+    trace!(
+        "vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, \
+         revocation_interval: {}, name: {})",
+        command_handle,
+        source_id,
+        requested_attrs,
+        requested_predicates,
+        revocation_interval,
+        name
+    );
 
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         let (rc, handle) = match proof::create_proof(
@@ -214,12 +229,24 @@ pub extern "C" fn vcx_v2_proof_update_state(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match proof::update_state(proof_handle, None, connection_handle).await {
             Ok(err) => {
-                trace!("vcx_v2_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}", command_handle, error::SUCCESS_ERR_CODE, proof_handle, err, source_id);
+                trace!(
+                    "vcx_v2_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: \
+                     {}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    proof_handle,
+                    err,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, err);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_v2_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}", command_handle, err, proof_handle, 0, source_id);
+                error!(
+                    "vcx_v2_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: \
+                     {}",
+                    command_handle, err, proof_handle, 0, source_id
+                );
                 cb(command_handle, err.into(), 0);
             }
         }
@@ -237,7 +264,8 @@ pub extern "C" fn vcx_v2_proof_update_state(
 ///
 /// proof_handle: Proof handle that was provided during creation. Used to access proof object
 ///
-/// connection_handle: Connection handle of connection associated with this proof exchange interaction.
+/// connection_handle: Connection handle of connection associated with this proof exchange
+/// interaction.
 ///
 /// message: message to process for state changes
 ///
@@ -274,12 +302,24 @@ pub extern "C" fn vcx_v2_proof_update_state_with_message(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match proof::update_state(proof_handle, Some(&message), connection_handle).await {
             Ok(err) => {
-                trace!("vcx_v2_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}", command_handle, error::SUCCESS_ERR_CODE, proof_handle, err, source_id);
+                trace!(
+                    "vcx_v2_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: \
+                     {}) source_id: {}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    proof_handle,
+                    err,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, err);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_v2_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}) source_id: {}", command_handle, err, proof_handle, 0, source_id);
+                error!(
+                    "vcx_v2_proof_update_state_with_message_cb(command_handle: {}, rc: {}, proof_handle: {}, state: \
+                     {}) source_id: {}",
+                    command_handle, err, proof_handle, 0, source_id
+                );
                 cb(command_handle, err.into(), 0);
             }
         }
@@ -717,12 +757,23 @@ pub extern "C" fn vcx_mark_presentation_request_msg_sent(
             Ok(offer_msg) => {
                 let offer_msg = json!(offer_msg).to_string();
                 let offer_msg = CStringUtils::string_to_cstring(offer_msg);
-                trace!("vcx_mark_presentation_request_msg_sent_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {}", command_handle, proof_handle, error::SUCCESS_ERR_CODE, source_id);
+                trace!(
+                    "vcx_mark_presentation_request_msg_sent_cb(command_handle: {}, credential_handle: {}, rc: {}) \
+                     source_id: {}",
+                    command_handle,
+                    proof_handle,
+                    error::SUCCESS_ERR_CODE,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, offer_msg.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_mark_presentation_request_msg_sent_cb(command_handle: {}, credential_handle: {}, rc: {}) source_id: {})", command_handle, proof_handle, err, source_id);
+                error!(
+                    "vcx_mark_presentation_request_msg_sent_cb(command_handle: {}, credential_handle: {}, rc: {}) \
+                     source_id: {})",
+                    command_handle, proof_handle, err, source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -790,24 +841,26 @@ pub extern "C" fn vcx_proof_get_thread_id(
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::CString;
-    use std::ptr;
-    use std::str;
+    use std::{ffi::CString, ptr, str};
 
-    use aries_vcx::protocols::proof_presentation::verifier::state_machine::VerifierState;
-    use aries_vcx::utils::constants::*;
-    use aries_vcx::utils::devsetup::*;
-    use aries_vcx::utils::mockdata::mock_settings::MockBuilder;
-    use aries_vcx::utils::mockdata::mockdata_proof;
-
-    use crate::api_c::cutils::return_types_u32;
-    use crate::api_c::cutils::timeout::TimeoutUtils;
-    use crate::api_vcx::api_handle::mediated_connection::tests::build_test_connection_inviter_requested;
-    use crate::api_vcx::api_handle::proof;
-    use crate::api_vcx::ProofStateType;
-    use crate::errors::error;
+    use aries_vcx::{
+        protocols::proof_presentation::verifier::state_machine::VerifierState,
+        utils::{
+            constants::*,
+            devsetup::*,
+            mockdata::{mock_settings::MockBuilder, mockdata_proof},
+        },
+    };
 
     use super::*;
+    use crate::{
+        api_c::cutils::{return_types_u32, timeout::TimeoutUtils},
+        api_vcx::{
+            api_handle::{mediated_connection::tests::build_test_connection_inviter_requested, proof},
+            ProofStateType,
+        },
+        errors::error,
+    };
 
     static DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 

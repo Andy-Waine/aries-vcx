@@ -1,36 +1,47 @@
 use std::ptr;
 
+use aries_vcx::{
+    agency_client::{
+        configuration::AgentProvisionConfig, messages::update_message::UIDsByConn, testing::mocking::AgencyMock,
+        MessageStatusCode,
+    },
+    utils::constants::*,
+};
 use futures::future::{BoxFuture, FutureExt};
 use libc::c_char;
 use serde_json;
 
-use aries_vcx::agency_client::configuration::AgentProvisionConfig;
-use aries_vcx::agency_client::messages::update_message::UIDsByConn;
-use aries_vcx::agency_client::testing::mocking::AgencyMock;
-use aries_vcx::agency_client::MessageStatusCode;
-
-use aries_vcx::utils::constants::*;
-
-use crate::api_c::types::CommandHandle;
-use crate::api_vcx::api_global::agency_client::agency_update_messages;
-use crate::api_vcx::api_global::agency_client::provision_cloud_agent;
-use crate::api_vcx::api_global::ledger::{
-    endorse_transaction, get_ledger_txn, get_verkey_from_ledger, ledger_get_service, ledger_write_endpoint_legacy,
-    rotate_verkey,
+use crate::{
+    api_c::{
+        cutils::{
+            cstring::CStringUtils,
+            current_error::{set_current_error, set_current_error_vcx},
+            runtime::execute_async,
+        },
+        types::CommandHandle,
+    },
+    api_vcx::{
+        api_global::{
+            agency_client::{agency_update_messages, provision_cloud_agent},
+            ledger::{
+                endorse_transaction, get_ledger_txn, get_verkey_from_ledger, ledger_get_service,
+                ledger_write_endpoint_legacy, rotate_verkey,
+            },
+            wallet::{
+                key_for_local_did, replace_did_keys_start, rotate_verkey_apply, wallet_create_pairwise_did,
+                wallet_unpack_message_to_string,
+            },
+        },
+        api_handle::{
+            mediated_connection,
+            mediated_connection::{parse_connection_handles, parse_status_codes},
+        },
+    },
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
 };
-use crate::api_vcx::api_handle::mediated_connection;
-use crate::api_vcx::api_handle::mediated_connection::{parse_connection_handles, parse_status_codes};
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
-
-use crate::api_vcx::api_global::wallet::{
-    key_for_local_did, replace_did_keys_start, rotate_verkey_apply, wallet_create_pairwise_did,
-    wallet_unpack_message_to_string,
-};
-
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::{set_current_error, set_current_error_vcx};
-use crate::api_c::cutils::runtime::execute_async;
 
 /// Provision an agent in the agency.
 ///

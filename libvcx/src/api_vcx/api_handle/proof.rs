@@ -1,16 +1,16 @@
-use aries_vcx::protocols::SendClosure;
+use aries_vcx::{
+    common::proofs::proof_request::PresentationRequestData, handlers::proof_presentation::verifier::Verifier,
+    messages::a2a::A2AMessage, protocols::SendClosure,
+};
 use serde_json;
 
-use aries_vcx::common::proofs::proof_request::PresentationRequestData;
-use aries_vcx::handlers::proof_presentation::verifier::Verifier;
-use aries_vcx::messages::a2a::A2AMessage;
-
-use crate::api_vcx::api_global::profile::get_main_profile;
-use crate::api_vcx::api_handle::connection::HttpClient;
-use crate::api_vcx::api_handle::object_cache::ObjectCache;
-use crate::api_vcx::api_handle::{connection, mediated_connection};
-
-use crate::errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult};
+use crate::{
+    api_vcx::{
+        api_global::profile::get_main_profile,
+        api_handle::{connection, connection::HttpClient, mediated_connection, object_cache::ObjectCache},
+    },
+    errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult},
+};
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Verifier> = ObjectCache::<Verifier>::new("proofs-cache");
@@ -214,22 +214,24 @@ pub fn get_thread_id(handle: u32) -> LibvcxResult<String> {
 
 #[cfg(test)]
 pub mod tests {
+    use aries_vcx::{
+        agency_client::testing::mocking::HttpClientMockResponse,
+        utils::{
+            constants::{
+                PROOF_REJECT_RESPONSE_STR_V2, REQUESTED_ATTRS, REQUESTED_PREDICATES, V3_OBJECT_SERIALIZE_VERSION,
+            },
+            devsetup::SetupMocks,
+            mockdata::{mock_settings::MockBuilder, mockdata_proof},
+        },
+    };
     use serde_json::Value;
 
-    use aries_vcx::agency_client::testing::mocking::HttpClientMockResponse;
-    use aries_vcx::utils::constants::{
-        PROOF_REJECT_RESPONSE_STR_V2, REQUESTED_ATTRS, REQUESTED_PREDICATES, V3_OBJECT_SERIALIZE_VERSION,
-    };
-    use aries_vcx::utils::devsetup::SetupMocks;
-    use aries_vcx::utils::mockdata::mock_settings::MockBuilder;
-    use aries_vcx::utils::mockdata::mockdata_proof;
-
-    use crate::api_vcx::api_handle::mediated_connection::tests::build_test_connection_inviter_requested;
-    use crate::api_vcx::api_handle::proof;
-    use crate::aries_vcx::protocols::proof_presentation::verifier::state_machine::VerifierState;
-    use crate::errors::error;
-
     use super::*;
+    use crate::{
+        api_vcx::api_handle::{mediated_connection::tests::build_test_connection_inviter_requested, proof},
+        aries_vcx::protocols::proof_presentation::verifier::state_machine::VerifierState,
+        errors::error,
+    };
 
     async fn create_default_proof() -> u32 {
         create_proof(

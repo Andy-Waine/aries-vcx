@@ -1,14 +1,20 @@
-use crate::api_vcx::api_global::agency_client::reset_main_agency_client;
-use crate::api_vcx::api_global::pool::{close_main_pool, reset_main_pool_handle};
-
-use crate::api_vcx::api_global::settings::get_config_value;
-use crate::api_vcx::api_global::wallet::close_main_wallet;
-use aries_vcx::global::settings::{
-    reset_config_values, CONFIG_POOL_NAME, CONFIG_WALLET_KEY, CONFIG_WALLET_KEY_DERIVATION, CONFIG_WALLET_NAME,
-    CONFIG_WALLET_TYPE, DEFAULT_POOL_NAME, DEFAULT_WALLET_NAME, UNINITIALIZED_WALLET_KEY, WALLET_KDF_DEFAULT,
+use aries_vcx::{
+    global::settings::{
+        reset_config_values, CONFIG_POOL_NAME, CONFIG_WALLET_KEY, CONFIG_WALLET_KEY_DERIVATION, CONFIG_WALLET_NAME,
+        CONFIG_WALLET_TYPE, DEFAULT_POOL_NAME, DEFAULT_WALLET_NAME, UNINITIALIZED_WALLET_KEY, WALLET_KDF_DEFAULT,
+    },
+    indy::{
+        ledger::pool,
+        wallet::{delete_wallet, WalletConfig},
+    },
 };
-use aries_vcx::indy::ledger::pool;
-use aries_vcx::indy::wallet::{delete_wallet, WalletConfig};
+
+use crate::api_vcx::api_global::{
+    agency_client::reset_main_agency_client,
+    pool::{close_main_pool, reset_main_pool_handle},
+    settings::get_config_value,
+    wallet::close_main_wallet,
+};
 
 pub fn state_vcx_shutdown(delete: bool) {
     info!("vcx_shutdown >>>");
@@ -56,18 +62,25 @@ pub fn state_vcx_shutdown(delete: bool) {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::api_c::vcx::vcx_shutdown;
-    use crate::api_vcx::api_global::wallet::get_main_wallet_handle;
-    use crate::api_vcx::api_handle::credential::credential_create_with_offer;
-    use crate::api_vcx::api_handle::disclosed_proof::create_with_proof_request;
-    use crate::api_vcx::api_handle::schema::create_and_publish_schema;
-    use crate::api_vcx::api_handle::{
-        credential, credential_def, disclosed_proof, issuer_credential, mediated_connection, proof, schema,
+    use aries_vcx::{
+        utils::{
+            devsetup::SetupMocks,
+            mockdata::{mockdata_credex::ARIES_CREDENTIAL_OFFER, mockdata_proof::ARIES_PROOF_REQUEST_PRESENTATION},
+        },
+        vdrtools::INVALID_WALLET_HANDLE,
     };
-    use aries_vcx::utils::devsetup::SetupMocks;
-    use aries_vcx::utils::mockdata::mockdata_credex::ARIES_CREDENTIAL_OFFER;
-    use aries_vcx::utils::mockdata::mockdata_proof::ARIES_PROOF_REQUEST_PRESENTATION;
-    use aries_vcx::vdrtools::INVALID_WALLET_HANDLE;
+
+    use crate::{
+        api_c::vcx::vcx_shutdown,
+        api_vcx::{
+            api_global::wallet::get_main_wallet_handle,
+            api_handle::{
+                credential, credential::credential_create_with_offer, credential_def, disclosed_proof,
+                disclosed_proof::create_with_proof_request, issuer_credential, mediated_connection, proof, schema,
+                schema::create_and_publish_schema,
+            },
+        },
+    };
 
     #[tokio::test]
     #[cfg(feature = "general_test")]

@@ -3,14 +3,21 @@ use std::ptr;
 use futures::future::BoxFuture;
 use libc::c_char;
 
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::{set_current_error, set_current_error_vcx};
-use crate::api_c::cutils::runtime::{execute, execute_async};
-use crate::api_c::types::CommandHandle;
-
-use crate::api_vcx::api_handle::{revocation_registry, revocation_registry::RevocationRegistryConfig};
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
+use crate::{
+    api_c::{
+        cutils::{
+            cstring::CStringUtils,
+            current_error::{set_current_error, set_current_error_vcx},
+            runtime::{execute, execute_async},
+        },
+        types::CommandHandle,
+    },
+    api_vcx::api_handle::{revocation_registry, revocation_registry::RevocationRegistryConfig},
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 #[no_mangle]
 pub extern "C" fn vcx_revocation_registry_create(

@@ -1,10 +1,12 @@
-use aries_vcx::global::settings::{indy_mocks_enabled, DEFAULT_POOL_NAME};
 use std::sync::RwLock;
 
+use aries_vcx::{
+    global::settings::{indy_mocks_enabled, DEFAULT_POOL_NAME},
+    indy::ledger::pool::{close, create_pool_ledger_config, open_pool_ledger, PoolConfig},
+    vdrtools::INVALID_POOL_HANDLE,
+};
+
 use crate::errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult};
-use aries_vcx::indy::ledger::pool::PoolConfig;
-use aries_vcx::indy::ledger::pool::{close, create_pool_ledger_config, open_pool_ledger};
-use aries_vcx::vdrtools::INVALID_POOL_HANDLE;
 
 lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
@@ -80,16 +82,23 @@ pub async fn close_main_pool() -> LibvcxResult<()> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::api_c::vcx::vcx_open_main_pool;
-    use crate::api_vcx::api_global::pool::{get_main_pool_handle, open_main_pool, reset_main_pool_handle};
-    use crate::errors::error::LibvcxErrorKind;
-    use aries_vcx::global::settings::{set_config_value, CONFIG_GENESIS_PATH};
-    use aries_vcx::indy::ledger::pool::test_utils::{
-        create_tmp_genesis_txn_file, delete_named_test_pool, delete_test_pool,
+    use aries_vcx::{
+        global::settings::{set_config_value, CONFIG_GENESIS_PATH},
+        indy::ledger::pool::{
+            test_utils::{create_tmp_genesis_txn_file, delete_named_test_pool, delete_test_pool},
+            PoolConfig,
+        },
+        utils::{
+            constants::GENESIS_PATH,
+            devsetup::{SetupDefaults, SetupEmpty, TempFile},
+        },
     };
-    use aries_vcx::indy::ledger::pool::PoolConfig;
-    use aries_vcx::utils::constants::GENESIS_PATH;
-    use aries_vcx::utils::devsetup::{SetupDefaults, SetupEmpty, TempFile};
+
+    use crate::{
+        api_c::vcx::vcx_open_main_pool,
+        api_vcx::api_global::pool::{get_main_pool_handle, open_main_pool, reset_main_pool_handle},
+        errors::error::LibvcxErrorKind,
+    };
 
     #[tokio::test]
     #[cfg(feature = "pool_tests")]

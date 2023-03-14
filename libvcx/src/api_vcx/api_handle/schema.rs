@@ -1,17 +1,20 @@
-use std::string::ToString;
-use std::sync::Arc;
+use std::{string::ToString, sync::Arc};
 
+use aries_vcx::{common::primitives::credential_schema::Schema, global::settings::CONFIG_INSTITUTION_DID};
 use serde_json;
 
-use aries_vcx::common::primitives::credential_schema::Schema;
-use aries_vcx::global::settings::CONFIG_INSTITUTION_DID;
-
-use crate::api_vcx::api_global::pool::get_main_pool_handle;
-use crate::api_vcx::api_global::profile::{get_main_profile, indy_handles_to_profile};
-use crate::api_vcx::api_global::settings::get_config_value;
-use crate::api_vcx::api_global::wallet::get_main_wallet_handle;
-use crate::api_vcx::api_handle::object_cache::ObjectCache;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult};
+use crate::{
+    api_vcx::{
+        api_global::{
+            pool::get_main_pool_handle,
+            profile::{get_main_profile, indy_handles_to_profile},
+            settings::get_config_value,
+            wallet::get_main_wallet_handle,
+        },
+        api_handle::object_cache::ObjectCache,
+    },
+    errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult},
+};
 
 lazy_static! {
     static ref SCHEMA_MAP: ObjectCache<Schema> = ObjectCache::<Schema>::new("schemas-cache");
@@ -167,26 +170,27 @@ pub fn get_state(handle: u32) -> LibvcxResult<u32> {
 
 #[cfg(test)]
 pub mod tests {
-    use rand::Rng;
-
     #[cfg(feature = "pool_tests")]
     use aries_vcx::common::ledger::transactions::add_new_did;
     #[cfg(feature = "pool_tests")]
     use aries_vcx::common::test_utils::create_and_write_test_schema;
-    use aries_vcx::global::settings::CONFIG_INSTITUTION_DID;
     #[cfg(feature = "pool_tests")]
     use aries_vcx::utils::constants;
-    use aries_vcx::utils::constants::SCHEMA_ID;
-    use aries_vcx::utils::devsetup::{SetupDefaults, SetupEmpty, SetupMocks};
+    use aries_vcx::{
+        global::settings::CONFIG_INSTITUTION_DID,
+        utils::{
+            constants::SCHEMA_ID,
+            devsetup::{SetupDefaults, SetupEmpty, SetupMocks},
+        },
+    };
+    use rand::Rng;
 
-    use crate::api_vcx::api_global::settings::get_config_value;
-    use crate::api_vcx::api_global::wallet::get_main_wallet_handle;
+    use super::*;
+    use crate::api_vcx::api_global::{settings::get_config_value, wallet::get_main_wallet_handle};
     #[cfg(feature = "pool_tests")]
     use crate::api_vcx::api_handle::schema;
     #[cfg(feature = "pool_tests")]
     use crate::api_vcx::utils::devsetup::SetupGlobalsWalletPoolAgency;
-
-    use super::*;
 
     fn data() -> Vec<String> {
         vec![

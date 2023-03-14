@@ -1,6 +1,4 @@
-use vcx::aries_vcx::errors::error::AriesVcxError;
-use vcx::errors::error::LibvcxError;
-use vcx::serde_json::json;
+use vcx::{aries_vcx::errors::error::AriesVcxError, errors::error::LibvcxError, serde_json::json};
 
 pub fn to_napi_err(err: LibvcxError) -> napi::Error {
     let reason = json!({

@@ -1,26 +1,34 @@
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::sync::Arc;
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 
-use crate::common::proofs::proof_request::PresentationRequestData;
-use crate::core::profile::profile::Profile;
-use crate::errors::error::prelude::*;
-use crate::protocols::common::build_problem_report_msg;
-use crate::protocols::proof_presentation::verifier::messages::VerifierMessages;
-use crate::protocols::proof_presentation::verifier::states::finished::FinishedState;
-use crate::protocols::proof_presentation::verifier::states::initial::InitialVerifierState;
-use crate::protocols::proof_presentation::verifier::states::presentation_proposal_received::PresentationProposalReceivedState;
-use crate::protocols::proof_presentation::verifier::states::presentation_request_sent::PresentationRequestSentState;
-use crate::protocols::proof_presentation::verifier::states::presentation_request_set::PresentationRequestSetState;
-use crate::protocols::proof_presentation::verifier::verify_thread_id;
-use crate::protocols::SendClosure;
-use messages::a2a::{A2AMessage, MessageId};
-use messages::concepts::problem_report::ProblemReport;
-use messages::protocols::proof_presentation::presentation::Presentation;
-use messages::protocols::proof_presentation::presentation_ack::PresentationAck;
-use messages::protocols::proof_presentation::presentation_proposal::PresentationProposal;
-use messages::protocols::proof_presentation::presentation_request::PresentationRequest;
-use messages::status::Status;
+use messages::{
+    a2a::{A2AMessage, MessageId},
+    concepts::problem_report::ProblemReport,
+    protocols::proof_presentation::{
+        presentation::Presentation, presentation_ack::PresentationAck, presentation_proposal::PresentationProposal,
+        presentation_request::PresentationRequest,
+    },
+    status::Status,
+};
+
+use crate::{
+    common::proofs::proof_request::PresentationRequestData,
+    core::profile::profile::Profile,
+    errors::error::prelude::*,
+    protocols::{
+        common::build_problem_report_msg,
+        proof_presentation::verifier::{
+            messages::VerifierMessages,
+            states::{
+                finished::FinishedState, initial::InitialVerifierState,
+                presentation_proposal_received::PresentationProposalReceivedState,
+                presentation_request_sent::PresentationRequestSentState,
+                presentation_request_set::PresentationRequestSetState,
+            },
+            verify_thread_id,
+        },
+        SendClosure,
+    },
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct VerifierSM {
@@ -97,7 +105,8 @@ impl VerifierSM {
         }
     }
 
-    // todo: eliminate VcxResult (follow set_request err chain and eliminate possibility of err at the bottom)
+    // todo: eliminate VcxResult (follow set_request err chain and eliminate possibility of err at the
+    // bottom)
     pub fn from_request(source_id: &str, presentation_request_data: &PresentationRequestData) -> VcxResult<Self> {
         let sm = Self {
             source_id: source_id.to_string(),
@@ -487,16 +496,19 @@ impl VerifierSM {
 #[cfg(test)]
 #[cfg(feature = "general_test")]
 pub mod unit_tests {
-    use crate::common::proofs::proof_request::test_utils::_presentation_request_data;
-    use crate::common::test_utils::mock_profile;
-    use crate::test::source_id;
-    use crate::utils::devsetup::{SetupEmpty, SetupMocks};
-    use messages::protocols::proof_presentation::presentation::test_utils::{_presentation, _presentation_1};
-    use messages::protocols::proof_presentation::presentation_proposal::test_utils::_presentation_proposal;
-    use messages::protocols::proof_presentation::presentation_request::test_utils::_presentation_request;
-    use messages::protocols::proof_presentation::test_utils::{_ack, _problem_report};
+    use messages::protocols::proof_presentation::{
+        presentation::test_utils::{_presentation, _presentation_1},
+        presentation_proposal::test_utils::_presentation_proposal,
+        presentation_request::test_utils::_presentation_request,
+        test_utils::{_ack, _problem_report},
+    };
 
     use super::*;
+    use crate::{
+        common::{proofs::proof_request::test_utils::_presentation_request_data, test_utils::mock_profile},
+        test::source_id,
+        utils::devsetup::{SetupEmpty, SetupMocks},
+    };
 
     pub fn _verifier_sm() -> VerifierSM {
         VerifierSM::new(&source_id())
@@ -562,13 +574,15 @@ pub mod unit_tests {
     }
 
     mod build_messages {
-        use super::*;
-
-        use crate::protocols::proof_presentation::verifier::state_machine::{
-            build_starting_presentation_request, build_verification_ack,
-        };
-        use crate::utils::devsetup::{was_in_past, SetupMocks};
         use messages::a2a::MessageId;
+
+        use super::*;
+        use crate::{
+            protocols::proof_presentation::verifier::state_machine::{
+                build_starting_presentation_request, build_verification_ack,
+            },
+            utils::devsetup::{was_in_past, SetupMocks},
+        };
 
         #[test]
         #[cfg(feature = "general_test")]
@@ -633,10 +647,8 @@ pub mod unit_tests {
     }
 
     mod step {
-        use crate::utils::devsetup::was_in_past;
-        use crate::utils::mockdata::mock_settings::MockBuilder;
-
         use super::*;
+        use crate::utils::{devsetup::was_in_past, mockdata::mock_settings::MockBuilder};
 
         #[test]
         #[cfg(feature = "general_test")]
@@ -1070,9 +1082,8 @@ pub mod unit_tests {
     }
 
     mod get_state {
-        use crate::utils::mockdata::mock_settings::MockBuilder;
-
         use super::*;
+        use crate::utils::mockdata::mock_settings::MockBuilder;
 
         #[tokio::test]
         #[cfg(feature = "general_test")]

@@ -1,12 +1,15 @@
 extern crate futures;
 
+use std::{
+    future::Future,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
+use futures::future::BoxFuture;
 use once_cell::sync::Lazy;
-use std::future::Future;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use tokio::runtime::Runtime;
 
 use crate::errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult};
-use futures::future::BoxFuture;
-use tokio::runtime::Runtime;
 
 static RT: Lazy<Runtime> = Lazy::new(|| {
     match tokio::runtime::Builder::new_multi_thread()

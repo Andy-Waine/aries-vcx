@@ -3,13 +3,21 @@ use std::ptr;
 use futures::future::BoxFuture;
 use libc::c_char;
 
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::set_current_error_vcx;
-use crate::api_c::cutils::runtime::{execute, execute_async};
-use crate::api_c::types::CommandHandle;
-use crate::api_vcx::api_handle::credential;
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
+use crate::{
+    api_c::{
+        cutils::{
+            cstring::CStringUtils,
+            current_error::set_current_error_vcx,
+            runtime::{execute, execute_async},
+        },
+        types::CommandHandle,
+    },
+    api_vcx::api_handle::credential,
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 /*
     The API represents a Holder side in credential issuance process.
@@ -57,7 +65,10 @@ use crate::errors::error::{LibvcxError, LibvcxErrorKind};
 /// # Example
 /// offer -> depends on communication method:
 ///     aries:
-///         {"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential", "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>, "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json", "data":{"base64":"<bytesforbase64>"}}]}
+///         {"@type":"did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/1.0/offer-credential",
+/// "@id":"<uuid-of-offer-message>", "comment":"somecomment", "credential_preview":<json-ldobject>,
+/// "offers~attach":[{"@id":"libindy-cred-offer-0", "mime-type":"application/json",
+/// "data":{"base64":"<bytesforbase64>"}}]}
 ///
 /// cb: Callback that provides credential handle or error status
 ///
@@ -112,14 +123,17 @@ pub extern "C" fn vcx_credential_create_with_offer(
     error::SUCCESS_ERR_CODE
 }
 
-/// Retrieve information about a stored credential in user's wallet, including credential id and the credential itself.
+/// Retrieve information about a stored credential in user's wallet, including credential id and the
+/// credential itself.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// credential_handle: credential handle that was provided during creation. Used to identify credential object
+/// credential_handle: credential handle that was provided during creation. Used to identify
+/// credential object
 ///
-/// cb: Callback that provides error status of api call, or returns the credential in json format of "{uuid:credential}".
+/// cb: Callback that provides error status of api call, or returns the credential in json format of
+/// "{uuid:credential}".
 ///
 /// # Example
 /// credential -> depends on communication method:
@@ -638,11 +652,23 @@ pub extern "C" fn vcx_credential_create_with_msgid(
         match credential::credential_create_with_msgid(&source_id, connection_handle, &msg_id).await {
             Ok((handle, offer_string)) => {
                 let c_offer = CStringUtils::string_to_cstring(offer_string);
-                trace!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) source_id: {}", command_handle, source_id, error::SUCCESS_ERR_CODE, handle, source_id);
+                trace!(
+                    "vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) \
+                     source_id: {}",
+                    command_handle,
+                    source_id,
+                    error::SUCCESS_ERR_CODE,
+                    handle,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, handle, c_offer.as_ptr())
             }
             Err(err) => {
-                error!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) source_id: {}", command_handle, source_id, err, 0, source_id);
+                error!(
+                    "vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {}) \
+                     source_id: {}",
+                    command_handle, source_id, err, 0, source_id
+                );
                 cb(command_handle, err.into(), 0, ptr::null_mut());
             }
         };
@@ -653,12 +679,14 @@ pub extern "C" fn vcx_credential_create_with_msgid(
     error::SUCCESS_ERR_CODE
 }
 
-/// Approves the credential offer and submits a credential request. The result will be a credential stored in the prover's wallet.
+/// Approves the credential offer and submits a credential request. The result will be a credential
+/// stored in the prover's wallet.
 ///
 /// #params
 /// command_handle: command handle to map callback to user context
 ///
-/// credential_handle: credential handle that was provided during creation. Used to identify credential object
+/// credential_handle: credential handle that was provided during creation. Used to identify
+/// credential object
 ///
 /// connection_handle: Connection handle that identifies pairwise connection
 ///
@@ -679,7 +707,14 @@ pub extern "C" fn vcx_credential_send_request(
     check_useful_c_callback!(cb, LibvcxErrorKind::InvalidOption);
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_credential_send_request(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}", command_handle, credential_handle, connection_handle, source_id);
+    trace!(
+        "vcx_credential_send_request(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: \
+         {:?}",
+        command_handle,
+        credential_handle,
+        connection_handle,
+        source_id
+    );
 
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match credential::send_credential_request(credential_handle, connection_handle).await {
@@ -707,16 +742,20 @@ pub extern "C" fn vcx_credential_send_request(
     error::SUCCESS_ERR_CODE
 }
 
-/// Approves the credential offer and gets the credential request message that can be sent to the specified connection
+/// Approves the credential offer and gets the credential request message that can be sent to the
+/// specified connection
 ///
 /// #params
 /// command_handle: command handle to map callback to user context
 ///
-/// credential_handle: credential handle that was provided during creation. Used to identify credential object
+/// credential_handle: credential handle that was provided during creation. Used to identify
+/// credential object
 ///
-/// my_pw_did: Use Connection api (vcx_connection_get_pw_did) with specified connection_handle to retrieve your pw_did
+/// my_pw_did: Use Connection api (vcx_connection_get_pw_did) with specified connection_handle to
+/// retrieve your pw_did
 ///
-/// their_pw_did: Use Connection api (vcx_connection_get_their_pw_did) with specified connection_handle to retrieve theri pw_did
+/// their_pw_did: Use Connection api (vcx_connection_get_their_pw_did) with specified
+/// connection_handle to retrieve theri pw_did
 ///
 /// cb: Callback that provides error status of credential request
 ///
@@ -738,7 +777,15 @@ pub extern "C" fn vcx_credential_get_request_msg(
     check_useful_c_callback!(cb, LibvcxErrorKind::InvalidOption);
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_credential_get_request_msg(command_handle: {}, credential_handle: {}, my_pw_did: {}, their_pw_did: {:?}), source_id: {:?}", command_handle, credential_handle, my_pw_did, their_pw_did, source_id);
+    trace!(
+        "vcx_credential_get_request_msg(command_handle: {}, credential_handle: {}, my_pw_did: {}, their_pw_did: \
+         {:?}), source_id: {:?}",
+        command_handle,
+        credential_handle,
+        my_pw_did,
+        their_pw_did,
+        source_id
+    );
 
     execute(move || {
         match credential::generate_credential_request_msg(
@@ -842,7 +889,14 @@ pub extern "C" fn vcx_credential_decline_offer(
     check_useful_opt_c_str!(comment, LibvcxErrorKind::InvalidOption);
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_credential_decline_offer(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}", command_handle, credential_handle, connection_handle, source_id);
+    trace!(
+        "vcx_credential_decline_offer(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: \
+         {:?}",
+        command_handle,
+        credential_handle,
+        connection_handle,
+        source_id
+    );
 
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match credential::decline_offer(credential_handle, connection_handle, comment.as_deref()).await {
@@ -877,7 +931,8 @@ pub extern "C" fn vcx_credential_decline_offer(
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+/// credential_handle: Credential handle that was provided during creation. Used to identify
+/// credential object
 ///
 /// connection_handle: Connection handle of the credential interaction is associated with.
 ///
@@ -897,7 +952,14 @@ pub extern "C" fn vcx_v2_credential_update_state(
     check_useful_c_callback!(cb, LibvcxErrorKind::InvalidOption);
 
     let source_id = credential::get_source_id(credential_handle).unwrap_or_default();
-    trace!("vcx_v2_credential_update_state(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}", command_handle, credential_handle, connection_handle, source_id);
+    trace!(
+        "vcx_v2_credential_update_state(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: \
+         {:?}",
+        command_handle,
+        credential_handle,
+        connection_handle,
+        source_id
+    );
 
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match credential::update_state(credential_handle, None, connection_handle).await {
@@ -930,7 +992,8 @@ pub extern "C" fn vcx_v2_credential_update_state(
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// credential_handle: Credential handle that was provided during creation. Used to identify credential object
+/// credential_handle: Credential handle that was provided during creation. Used to identify
+/// credential object
 ///
 /// connection_handle: Connection handle of the credential interaction is associated with.
 ///
@@ -964,11 +1027,22 @@ pub extern "C" fn vcx_v2_credential_update_state_with_message(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match credential::update_state(credential_handle, Some(&message), connection_handle).await {
             Ok(state) => {
-                trace!("vcx_v2_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}", command_handle, error::SUCCESS_ERR_CODE, state, source_id);
+                trace!(
+                    "vcx_v2_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), \
+                     source_id: {:?}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    state,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, state)
             }
             Err(err) => {
-                error!("vcx_v2_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}", command_handle, err, 0, source_id);
+                error!(
+                    "vcx_v2_credential_update_state_with_message_cb(command_handle: {}, rc: {}, state: {}), \
+                     source_id: {:?}",
+                    command_handle, err, 0, source_id
+                );
                 cb(command_handle, err.into(), 0)
             }
         }
@@ -1191,23 +1265,23 @@ pub extern "C" fn vcx_credential_release(handle: u32) -> u32 {
 mod tests {
     use std::ffi::CString;
 
+    use aries_vcx::{
+        agency_client::testing::mocking::AgencyMockDecrypted,
+        protocols::issuance::holder::state_machine::HolderState,
+        utils::{
+            constants::{GET_MESSAGES_DECRYPTED_RESPONSE, V3_OBJECT_SERIALIZE_VERSION},
+            devsetup::SetupMocks,
+            mockdata::mockdata_credex::{ARIES_CREDENTIAL_OFFER, ARIES_CREDENTIAL_RESPONSE, CREDENTIAL_SM_FINISHED},
+        },
+    };
     use serde_json::Value;
 
-    use aries_vcx::agency_client::testing::mocking::AgencyMockDecrypted;
-    use aries_vcx::protocols::issuance::holder::state_machine::HolderState;
-    use aries_vcx::utils::constants::{GET_MESSAGES_DECRYPTED_RESPONSE, V3_OBJECT_SERIALIZE_VERSION};
-    use aries_vcx::utils::devsetup::SetupMocks;
-    use aries_vcx::utils::mockdata::mockdata_credex::{
-        ARIES_CREDENTIAL_OFFER, ARIES_CREDENTIAL_RESPONSE, CREDENTIAL_SM_FINISHED,
-    };
-
-    use crate::api_c::cutils::return_types_u32;
-    use crate::api_c::cutils::timeout::TimeoutUtils;
-    use crate::api_vcx::api_handle::credential::tests::BAD_CREDENTIAL_OFFER;
-    use crate::api_vcx::api_handle::mediated_connection;
-    use crate::errors::error;
-
     use super::*;
+    use crate::{
+        api_c::cutils::{return_types_u32, timeout::TimeoutUtils},
+        api_vcx::api_handle::{credential::tests::BAD_CREDENTIAL_OFFER, mediated_connection},
+        errors::error,
+    };
 
     fn _vcx_credential_create_with_offer_c_closure(offer: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();

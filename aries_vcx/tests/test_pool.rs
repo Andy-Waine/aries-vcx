@@ -8,19 +8,24 @@ pub mod utils;
 #[cfg(test)]
 #[cfg(feature = "pool_tests")]
 mod integration_tests {
-    use aries_vcx::common::keys::{get_verkey_from_ledger, rotate_verkey};
-    use aries_vcx::common::ledger::service_didsov::EndpointDidSov;
-    use aries_vcx::common::ledger::transactions::{
-        add_new_did, clear_attr, get_service, write_endpoint, write_endpoint_legacy,
+    use std::{sync::Arc, thread, time::Duration};
+
+    use aries_vcx::{
+        common::{
+            keys::{get_verkey_from_ledger, rotate_verkey},
+            ledger::{
+                service_didsov::EndpointDidSov,
+                transactions::{add_new_did, clear_attr, get_service, write_endpoint, write_endpoint_legacy},
+            },
+            test_utils::create_and_store_nonrevocable_credential_def,
+        },
+        messages::protocols::connection::did::Did,
+        utils::{
+            constants::DEFAULT_SCHEMA_ATTRS,
+            devsetup::{SetupProfile, SetupWalletPool},
+        },
     };
-    use aries_vcx::common::test_utils::create_and_store_nonrevocable_credential_def;
-    use aries_vcx::messages::protocols::connection::did::Did;
-    use aries_vcx::utils::constants::DEFAULT_SCHEMA_ATTRS;
-    use aries_vcx::utils::devsetup::{SetupProfile, SetupWalletPool};
     use messages::diddoc::aries::service::AriesService;
-    use std::sync::Arc;
-    use std::thread;
-    use std::time::Duration;
 
     #[tokio::test]
     async fn test_open_close_pool() {
@@ -72,12 +77,14 @@ mod integration_tests {
     // async fn test_endorse_transaction() {
     //     SetupProfile::run_indy(|setup| async move {
     //         let ledger = Arc::clone(&setup.profile).inject_ledger();
-    //         let (author_did, _) = add_new_did(&setup.profile, &setup.institution_did, None).await.unwrap();
-    //         let (endorser_did, _) = add_new_did(&setup.profile, &setup.institution_did, Some("ENDORSER")).await.unwrap();
+    //         let (author_did, _) = add_new_did(&setup.profile, &setup.institution_did,
+    // None).await.unwrap();         let (endorser_did, _) = add_new_did(&setup.profile,
+    // &setup.institution_did, Some("ENDORSER")).await.unwrap();
 
-    //         let schema_request = ledger.build_schema_request(&author_did, SCHEMA_DATA).await.unwrap();
-    //         let schema_request = append_request_endorser(&schema_request, &endorser_did).await.unwrap();
-    //         let schema_request = multisign_request(setup.wallet_handle, &author_did, &schema_request)
+    //         let schema_request = ledger.build_schema_request(&author_did,
+    // SCHEMA_DATA).await.unwrap();         let schema_request =
+    // append_request_endorser(&schema_request, &endorser_did).await.unwrap();         let
+    // schema_request = multisign_request(setup.wallet_handle, &author_did, &schema_request)
     //             .await
     //             .unwrap();
     //         ledger.endorse_transaction(&endorser_did, &schema_request).await.unwrap();

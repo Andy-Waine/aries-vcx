@@ -1,11 +1,12 @@
 use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
-use vcx::api_vcx::api_global::settings::settings_init_issuer_config;
-use vcx::api_vcx::api_global::{ledger, wallet};
-use vcx::aries_vcx::indy::wallet::{IssuerConfig, RestoreWalletConfigs, WalletConfig};
-use vcx::errors::error::{LibvcxError, LibvcxErrorKind};
-use vcx::serde_json;
-use vcx::serde_json::json;
+use vcx::{
+    api_vcx::api_global::{ledger, settings::settings_init_issuer_config, wallet},
+    aries_vcx::indy::wallet::{IssuerConfig, RestoreWalletConfigs, WalletConfig},
+    errors::error::{LibvcxError, LibvcxErrorKind},
+    serde_json,
+    serde_json::json,
+};
 
 use crate::error::to_napi_err;
 

@@ -1,12 +1,15 @@
 use napi_derive::napi;
-
-use vcx::api_vcx::api_global::agency_client;
-use vcx::aries_vcx::agency_client::configuration::{AgencyClientConfig, AgentProvisionConfig};
-use vcx::aries_vcx::agency_client::messages::update_message::UIDsByConn;
-use vcx::aries_vcx::agency_client::MessageStatusCode;
-use vcx::errors::error::{LibvcxError, LibvcxErrorKind};
-use vcx::serde_json;
-use vcx::serde_json::json;
+use vcx::{
+    api_vcx::api_global::agency_client,
+    aries_vcx::agency_client::{
+        configuration::{AgencyClientConfig, AgentProvisionConfig},
+        messages::update_message::UIDsByConn,
+        MessageStatusCode,
+    },
+    errors::error::{LibvcxError, LibvcxErrorKind},
+    serde_json,
+    serde_json::json,
+};
 
 use crate::error::to_napi_err;
 

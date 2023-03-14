@@ -1,30 +1,37 @@
 use std::ffi::CString;
 
+use aries_vcx::{
+    agency_client::configuration::AgencyClientConfig,
+    indy::{ledger::pool::PoolConfig, wallet::IssuerConfig},
+};
 use futures::future::{BoxFuture, FutureExt};
 use libc::c_char;
 
-use aries_vcx::agency_client::configuration::AgencyClientConfig;
-
-use crate::api_vcx::utils::version_constants;
-use aries_vcx::indy::ledger::pool::PoolConfig;
-use aries_vcx::indy::wallet::IssuerConfig;
-
-use crate::api_c::types::CommandHandle;
-use crate::api_vcx::api_global::agency_client::update_webhook_url;
-use crate::api_vcx::api_global::ledger::{ledger_get_txn_author_agreement, ledger_set_txn_author_agreement};
-
-use crate::api_vcx::api_global::agency_client::create_agency_client_for_main_wallet;
-use crate::api_vcx::api_global::pool::open_main_pool;
-use crate::api_vcx::api_global::settings::{enable_mocks, settings_init_issuer_config};
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
-
-use crate::api_vcx::api_global::state::state_vcx_shutdown;
-
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::{get_current_error_c_json, set_current_error, set_current_error_vcx};
-use crate::api_c::cutils::runtime::{execute, execute_async, init_threadpool};
-use crate::api_vcx::api_global::VERSION_STRING;
+use crate::{
+    api_c::{
+        cutils::{
+            cstring::CStringUtils,
+            current_error::{get_current_error_c_json, set_current_error, set_current_error_vcx},
+            runtime::{execute, execute_async, init_threadpool},
+        },
+        types::CommandHandle,
+    },
+    api_vcx::{
+        api_global::{
+            agency_client::{create_agency_client_for_main_wallet, update_webhook_url},
+            ledger::{ledger_get_txn_author_agreement, ledger_set_txn_author_agreement},
+            pool::open_main_pool,
+            settings::{enable_mocks, settings_init_issuer_config},
+            state::state_vcx_shutdown,
+            VERSION_STRING,
+        },
+        utils::version_constants,
+    },
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 /// Only for Wrapper testing purposes, sets global library settings.
 ///
@@ -221,16 +228,16 @@ pub extern "C" fn vcx_init_issuer_config(
 /// {
 ///     "timeout": int (optional), timeout for network request (in sec).
 ///     "extended_timeout": int (optional), extended timeout for network request (in sec).
-///     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
-///         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority
+/// during request sending:         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
 ///         This can be useful if a user prefers querying specific nodes.
 ///         Assume that `Node1` and `Node2` nodes reply faster.
-///         If you pass them Libindy always sends a read request to these nodes first and only then (if not enough) to others.
-///         Note: Nodes not specified will be placed randomly.
-///     "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by default)
-///         By default Libindy sends a read requests to 2 nodes in the pool.
-///         If response isn't received or `state proof` is invalid Libindy sends the request again but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion.
-/// }
+///         If you pass them Libindy always sends a read request to these nodes first and only then
+/// (if not enough) to others.         Note: Nodes not specified will be placed randomly.
+///     "number_read_nodes": int (optional) - the number of nodes to send read requests (2 by
+/// default)         By default Libindy sends a read requests to 2 nodes in the pool.
+///         If response isn't received or `state proof` is invalid Libindy sends the request again
+/// but to 2 (`number_read_nodes`) * 2 = 4 nodes and so far until completion. }
 ///
 /// cb: Callback that provides error status
 ///
@@ -415,14 +422,15 @@ pub extern "C" fn vcx_get_ledger_author_agreement(
 
 /// Set some accepted agreement as active.
 ///
-/// As result of successful call of this function appropriate metadata will be appended to each write request.
+/// As result of successful call of this function appropriate metadata will be appended to each
+/// write request.
 ///
 /// #Params
 /// text and version - (optional) raw data about TAA from ledger.
 ///     These parameters should be passed together.
 ///     These parameters are required if hash parameter is ommited.
-/// hash - (optional) hash on text and version. This parameter is required if text and version parameters are ommited.
-/// acc_mech_type - mechanism how user has accepted the TAA
+/// hash - (optional) hash on text and version. This parameter is required if text and version
+/// parameters are ommited. acc_mech_type - mechanism how user has accepted the TAA
 /// time_of_acceptance - UTC timestamp when user has accepted the TAA
 ///
 /// #Returns
@@ -442,7 +450,15 @@ pub extern "C" fn vcx_set_active_txn_author_agreement_meta(
     check_useful_opt_c_str!(hash, LibvcxErrorKind::InvalidOption);
     check_useful_c_str!(acc_mech_type, LibvcxErrorKind::InvalidOption);
 
-    trace!("vcx_set_active_txn_author_agreement_meta(text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, time_of_acceptance: {:?})", text, version, hash, acc_mech_type, time_of_acceptance);
+    trace!(
+        "vcx_set_active_txn_author_agreement_meta(text: {:?}, version: {:?}, hash: {:?}, acc_mech_type: {:?}, \
+         time_of_acceptance: {:?})",
+        text,
+        version,
+        hash,
+        acc_mech_type,
+        time_of_acceptance
+    );
 
     match ledger_set_txn_author_agreement(text, version, hash, acc_mech_type, time_of_acceptance) {
         Ok(()) => error::SUCCESS_ERR_CODE,
@@ -456,18 +472,17 @@ pub extern "C" fn vcx_set_active_txn_author_agreement_meta(
 ///     1) synchronous  - in the same application thread
 ///     2) asynchronous - inside of function callback
 ///
-/// NOTE: Error is stored until the next one occurs in the same execution thread or until asynchronous callback finished.
-///       Returning pointer has the same lifetime.
+/// NOTE: Error is stored until the next one occurs in the same execution thread or until
+/// asynchronous callback finished.       Returning pointer has the same lifetime.
 ///
 /// #Params
 /// * `error_json_p` - Reference that will contain error details (if any error has occurred before)
 ///  in the format:
 /// {
 ///     "backtrace": Optional<str> - error backtrace.
-///         Collecting of backtrace can be enabled by setting environment variable `RUST_BACKTRACE=1`
-///     "message": str - human-readable error description
+///         Collecting of backtrace can be enabled by setting environment variable
+/// `RUST_BACKTRACE=1`     "message": str - human-readable error description
 /// }
-///
 #[no_mangle]
 pub extern "C" fn vcx_get_current_error(error_json_p: *mut *const c_char) {
     trace!("vcx_get_current_error >>> error_json_p: {:?}", error_json_p);
@@ -480,20 +495,24 @@ pub extern "C" fn vcx_get_current_error(error_json_p: *mut *const c_char) {
 
 #[cfg(feature = "test_utils")]
 pub mod test_utils {
-    use aries_vcx::agency_client::testing::mocking::enable_agency_mocks;
-    use aries_vcx::global::settings::{DEFAULT_WALLET_KEY, WALLET_KDF_RAW};
+    use aries_vcx::{
+        agency_client::testing::mocking::enable_agency_mocks,
+        global::settings::{DEFAULT_WALLET_KEY, WALLET_KDF_RAW},
+    };
     use uuid;
 
-    use crate::api_c::cutils::return_types_u32;
-    use crate::api_c::cutils::timeout::TimeoutUtils;
-    use crate::api_c::vcx::vcx_open_main_pool;
-    use crate::api_c::wallet::{
-        vcx_configure_issuer_wallet, vcx_create_wallet, vcx_open_main_wallet, vcx_wallet_add_record,
-        vcx_wallet_get_record,
-    };
-    use crate::errors::error;
-
     use super::*;
+    use crate::{
+        api_c::{
+            cutils::{return_types_u32, timeout::TimeoutUtils},
+            vcx::vcx_open_main_pool,
+            wallet::{
+                vcx_configure_issuer_wallet, vcx_create_wallet, vcx_open_main_wallet, vcx_wallet_add_record,
+                vcx_wallet_get_record,
+            },
+        },
+        errors::error,
+    };
 
     pub fn _vcx_open_main_pool_c_closure(pool_config: &str) -> Result<(), u32> {
         let cb = return_types_u32::Return_U32::new().unwrap();
@@ -599,53 +618,62 @@ pub mod test_utils {
 #[cfg(test)]
 #[allow(unused_imports)] // TODO: remove it
 mod tests {
-    use aries_vcx::global::settings::{
-        set_config_value, set_test_configs, CONFIG_GENESIS_PATH, CONFIG_TXN_AUTHOR_AGREEMENT,
-        DEFAULT_WALLET_BACKUP_KEY, DEFAULT_WALLET_KEY, WALLET_KDF_RAW,
-    };
     #[cfg(feature = "general_test")]
     use std::ptr;
 
-    use aries_vcx::indy;
     #[cfg(feature = "pool_tests")]
     use aries_vcx::indy::ledger::pool::{
         test_utils::{create_tmp_genesis_txn_file, delete_named_test_pool, delete_test_pool},
         PoolConfig,
     };
-    use aries_vcx::indy::wallet::{import, RestoreWalletConfigs, WalletConfig};
-    use aries_vcx::utils::constants::GENESIS_PATH;
-    use aries_vcx::utils::devsetup::{
-        SetupDefaults, SetupEmpty, SetupMocks, SetupPoolConfig, TempFile, TestSetupCreateWallet,
+    use aries_vcx::{
+        global::settings::{
+            set_config_value, set_test_configs, CONFIG_GENESIS_PATH, CONFIG_TXN_AUTHOR_AGREEMENT,
+            DEFAULT_WALLET_BACKUP_KEY, DEFAULT_WALLET_KEY, WALLET_KDF_RAW,
+        },
+        indy,
+        indy::wallet::{import, RestoreWalletConfigs, WalletConfig},
+        utils::{
+            constants::GENESIS_PATH,
+            devsetup::{SetupDefaults, SetupEmpty, SetupMocks, SetupPoolConfig, TempFile, TestSetupCreateWallet},
+            mockdata::{mockdata_credex::ARIES_CREDENTIAL_OFFER, mockdata_proof::ARIES_PROOF_REQUEST_PRESENTATION},
+        },
+        vdrtools::{INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE},
     };
-    use aries_vcx::utils::mockdata::mockdata_credex::ARIES_CREDENTIAL_OFFER;
-    use aries_vcx::utils::mockdata::mockdata_proof::ARIES_PROOF_REQUEST_PRESENTATION;
-    use aries_vcx::vdrtools::{INVALID_POOL_HANDLE, INVALID_WALLET_HANDLE};
-
-    use crate::api_c;
-    use crate::api_c::cutils::current_error::reset_current_error;
-    use crate::api_c::cutils::return_types_u32;
-    use crate::api_c::cutils::timeout::TimeoutUtils;
-    use crate::api_c::protocols::mediated_connection::vcx_connection_create;
-    use crate::api_c::vcx::test_utils::{
-        _vcx_init_threadpool, _vcx_init_threadpool_c_closure, _vcx_open_main_pool_c_closure,
-        _vcx_open_main_wallet_c_closure, _vcx_open_pool,
-    };
-    use crate::api_c::wallet::vcx_create_wallet;
-    use crate::api_vcx;
-    #[cfg(feature = "pool_tests")]
-    use crate::api_vcx::api_global::pool::get_main_pool_handle;
-    use crate::api_vcx::api_global::pool::reset_main_pool_handle;
-    use crate::api_vcx::api_global::settings;
-    use crate::api_vcx::api_global::wallet::test_utils::_create_main_wallet_and_its_backup;
-    use crate::api_vcx::api_global::wallet::wallet_import;
-    use crate::api_vcx::api_global::wallet::{close_main_wallet, get_main_wallet_handle};
-    use crate::api_vcx::api_handle::{
-        credential, credential_def, disclosed_proof, issuer_credential, mediated_connection, proof, schema,
-    };
-    use crate::errors::error;
-    use crate::errors::error::{LibvcxErrorKind, LibvcxResult};
 
     use super::*;
+    #[cfg(feature = "pool_tests")]
+    use crate::api_vcx::api_global::pool::get_main_pool_handle;
+    use crate::{
+        api_c,
+        api_c::{
+            cutils::{current_error::reset_current_error, return_types_u32, timeout::TimeoutUtils},
+            protocols::mediated_connection::vcx_connection_create,
+            vcx::test_utils::{
+                _vcx_init_threadpool, _vcx_init_threadpool_c_closure, _vcx_open_main_pool_c_closure,
+                _vcx_open_main_wallet_c_closure, _vcx_open_pool,
+            },
+            wallet::vcx_create_wallet,
+        },
+        api_vcx,
+        api_vcx::{
+            api_global::{
+                pool::reset_main_pool_handle,
+                settings,
+                wallet::{
+                    close_main_wallet, get_main_wallet_handle, test_utils::_create_main_wallet_and_its_backup,
+                    wallet_import,
+                },
+            },
+            api_handle::{
+                credential, credential_def, disclosed_proof, issuer_credential, mediated_connection, proof, schema,
+            },
+        },
+        errors::{
+            error,
+            error::{LibvcxErrorKind, LibvcxResult},
+        },
+    };
 
     #[cfg(feature = "pool_tests")]
     #[tokio::test]

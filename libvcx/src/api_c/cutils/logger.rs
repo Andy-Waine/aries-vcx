@@ -1,13 +1,22 @@
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult};
-use chrono::format::{DelayedFormat, StrftimeItems};
-use chrono::Local;
+use std::{
+    env,
+    ffi::{c_void, CString},
+    io::Write,
+    ptr,
+};
+
+use chrono::{
+    format::{DelayedFormat, StrftimeItems},
+    Local,
+};
 use env_logger::{fmt::Formatter, Builder as EnvLoggerBuilder};
 use libc::c_char;
 use log::{Level, LevelFilter, Metadata, Record};
-use std::ffi::{c_void, CString};
-use std::io::Write;
-use std::{env, ptr};
+
+use crate::{
+    api_c::cutils::cstring::CStringUtils,
+    errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult},
+};
 
 pub type CVoid = c_void;
 
@@ -154,8 +163,8 @@ impl log::Log for LibvcxLogger {
 //DEBUG	Designates fine-grained informational events that are most useful to debug an application.
 //ERROR	Designates error events that might still allow the application to continue running.
 //FATAL	Designates very severe error events that will presumably lead the application to abort.
-//INFO	Designates informational messages that highlight the progress of the application at coarse-grained level.
-//OFF	The highest possible rank and is intended to turn off logging.
+//INFO	Designates informational messages that highlight the progress of the application at
+// coarse-grained level. OFF	The highest possible rank and is intended to turn off logging.
 //TRACE	Designates finer-grained informational events than the DEBUG.
 //WARN	Designates potentially harmful situations.
 pub struct LibvcxDefaultLogger;
@@ -296,9 +305,10 @@ fn get_level(level: u32) -> Level {
 
 #[cfg(test)]
 mod tests {
+    use std::ptr;
+
     use super::*;
     use crate::api_c::cutils::logger::{CVoid, LibvcxLogger};
-    use std::ptr;
 
     fn get_custom_context() -> *const CVoid {
         ptr::null()

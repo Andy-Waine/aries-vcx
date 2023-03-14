@@ -1,12 +1,13 @@
-use aries_vcx::common::ledger::transactions::{get_service, write_endpoint_legacy};
-use aries_vcx::global::settings::CONFIG_INSTITUTION_DID;
-use aries_vcx::messages::diddoc::aries::service::AriesService;
-use aries_vcx::messages::protocols::connection::did::Did;
+use aries_vcx::{
+    common::ledger::transactions::{get_service, write_endpoint_legacy},
+    global::settings::CONFIG_INSTITUTION_DID,
+    messages::{diddoc::aries::service::AriesService, protocols::connection::did::Did},
+};
 
-use crate::api_vcx::api_global::profile::get_main_profile;
-use crate::api_vcx::api_global::settings::get_config_value;
-use crate::errors::error::LibvcxResult;
-use crate::errors::mapping_from_ariesvcx::map_ariesvcx_result;
+use crate::{
+    api_vcx::api_global::{profile::get_main_profile, settings::get_config_value},
+    errors::{error::LibvcxResult, mapping_from_ariesvcx::map_ariesvcx_result},
+};
 
 pub async fn endorse_transaction(transaction: &str) -> LibvcxResult<()> {
     let endorser_did = get_config_value(CONFIG_INSTITUTION_DID)?;
@@ -77,11 +78,18 @@ pub fn ledger_set_txn_author_agreement(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::api_c::vcx::{vcx_get_ledger_author_agreement, vcx_set_active_txn_author_agreement_meta};
-    use crate::api_vcx::api_global::ledger::{ledger_get_txn_author_agreement, ledger_set_txn_author_agreement};
-    use crate::api_vcx::api_global::settings::get_config_value;
-    use aries_vcx::global::settings::{set_test_configs, CONFIG_TXN_AUTHOR_AGREEMENT};
-    use aries_vcx::utils::devsetup::SetupMocks;
+    use aries_vcx::{
+        global::settings::{set_test_configs, CONFIG_TXN_AUTHOR_AGREEMENT},
+        utils::devsetup::SetupMocks,
+    };
+
+    use crate::{
+        api_c::vcx::{vcx_get_ledger_author_agreement, vcx_set_active_txn_author_agreement_meta},
+        api_vcx::api_global::{
+            ledger::{ledger_get_txn_author_agreement, ledger_set_txn_author_agreement},
+            settings::get_config_value,
+        },
+    };
 
     #[tokio::test]
     #[cfg(feature = "general_test")]

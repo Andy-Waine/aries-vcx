@@ -1,20 +1,20 @@
-use aries_vcx::protocols::SendClosure;
+use aries_vcx::{
+    handlers::issuance::issuer::Issuer,
+    messages::{a2a::A2AMessage, protocols::issuance::credential_offer::OfferInfo},
+    protocols::SendClosure,
+};
 use serde_json;
 
-use aries_vcx::handlers::issuance::issuer::Issuer;
-use aries_vcx::messages::a2a::A2AMessage;
-use aries_vcx::messages::protocols::issuance::credential_offer::OfferInfo;
-
-use crate::api_vcx::api_global::profile::get_main_profile;
-use crate::api_vcx::api_global::profile::get_main_profile_optional_pool;
-use crate::api_vcx::api_handle::connection;
-use crate::api_vcx::api_handle::connection::HttpClient;
-use crate::api_vcx::api_handle::credential_def;
-use crate::api_vcx::api_handle::mediated_connection;
-use crate::api_vcx::api_handle::object_cache::ObjectCache;
-use crate::api_vcx::api_handle::revocation_registry::REV_REG_MAP;
-
-use crate::errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult};
+use crate::{
+    api_vcx::{
+        api_global::profile::{get_main_profile, get_main_profile_optional_pool},
+        api_handle::{
+            connection, connection::HttpClient, credential_def, mediated_connection, object_cache::ObjectCache,
+            revocation_registry::REV_REG_MAP,
+        },
+    },
+    errors::error::{LibvcxError, LibvcxErrorKind, LibvcxResult},
+};
 
 lazy_static! {
     static ref ISSUER_CREDENTIAL_MAP: ObjectCache<Issuer> = ObjectCache::<Issuer>::new("issuer-credentials-cache");
@@ -275,19 +275,24 @@ pub fn get_thread_id(handle: u32) -> LibvcxResult<String> {
 
 #[cfg(test)]
 pub mod tests {
-    use aries_vcx::indy::utils::LibindyMock;
-    use aries_vcx::utils::constants::V3_OBJECT_SERIALIZE_VERSION;
-    use aries_vcx::utils::devsetup::{SetupEmpty, SetupMocks};
-    use aries_vcx::utils::mockdata::mockdata_credex::ARIES_CREDENTIAL_REQUEST;
-    use aries_vcx::utils::mockdata::mockdata_mediated_connection::ARIES_CONNECTION_ACK;
-
-    use crate::api_vcx::api_handle::credential_def::tests::create_and_publish_nonrevocable_creddef;
-    use crate::api_vcx::api_handle::issuer_credential;
-    use crate::api_vcx::api_handle::mediated_connection::tests::build_test_connection_inviter_requested;
-    use crate::aries_vcx::protocols::issuance::issuer::state_machine::IssuerState;
-    use crate::errors::error;
+    use aries_vcx::{
+        indy::utils::LibindyMock,
+        utils::{
+            constants::V3_OBJECT_SERIALIZE_VERSION,
+            devsetup::{SetupEmpty, SetupMocks},
+            mockdata::{mockdata_credex::ARIES_CREDENTIAL_REQUEST, mockdata_mediated_connection::ARIES_CONNECTION_ACK},
+        },
+    };
 
     use super::*;
+    use crate::{
+        api_vcx::api_handle::{
+            credential_def::tests::create_and_publish_nonrevocable_creddef, issuer_credential,
+            mediated_connection::tests::build_test_connection_inviter_requested,
+        },
+        aries_vcx::protocols::issuance::issuer::state_machine::IssuerState,
+        errors::error,
+    };
 
     fn _issuer_credential_create() -> u32 {
         issuer_credential_create("1".to_string()).unwrap()

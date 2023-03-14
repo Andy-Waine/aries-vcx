@@ -1,9 +1,9 @@
 use napi_derive::napi;
-
-use vcx::api_vcx::api_handle::revocation_registry;
-use vcx::api_vcx::api_handle::revocation_registry::RevocationRegistryConfig;
-use vcx::errors::error::{LibvcxError, LibvcxErrorKind};
-use vcx::serde_json;
+use vcx::{
+    api_vcx::api_handle::{revocation_registry, revocation_registry::RevocationRegistryConfig},
+    errors::error::{LibvcxError, LibvcxErrorKind},
+    serde_json,
+};
 
 use crate::error::to_napi_err;
 

@@ -4,15 +4,21 @@ use futures::future::BoxFuture;
 use libc::c_char;
 use serde_json;
 
-use crate::api_c::types::CommandHandle;
-
-use crate::api_vcx::api_handle::schema;
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
-
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::set_current_error_vcx;
-use crate::api_c::cutils::runtime::{execute, execute_async};
+use crate::{
+    api_c::{
+        cutils::{
+            cstring::CStringUtils,
+            current_error::set_current_error_vcx,
+            runtime::{execute, execute_async},
+        },
+        types::CommandHandle,
+    },
+    api_vcx::api_handle::schema,
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 /// Create a new Schema object and publish corresponding record on the ledger
 ///
@@ -59,7 +65,8 @@ pub extern "C" fn vcx_schema_create(
     trace!(target: "vcx", "vcx_schema_create(command_handle: {}, source_id: {}, schema_name: {},  schema_data: {})",
            command_handle, source_id, schema_name, schema_data);
 
-    // todo: schema::create_and_publish_schema must have method in api_vcx layer, should include issuer_did loading
+    // todo: schema::create_and_publish_schema must have method in api_vcx layer, should include
+    // issuer_did loading
     // - similar also for functions below
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match schema::create_and_publish_schema(&source_id, schema_name, version, schema_data).await {
@@ -97,13 +104,15 @@ pub extern "C" fn vcx_schema_create(
 ///
 /// version: version of schema
 ///
-/// schema_data: list of attributes that will make up the schema (the number of attributes should be less or equal than 125)
+/// schema_data: list of attributes that will make up the schema (the number of attributes should be
+/// less or equal than 125)
 ///
 /// endorser: DID of the Endorser that will submit the transaction.
 ///
 /// # Example schema_data -> "["attr1", "attr2", "attr3"]"
 ///
-/// cb: Callback that provides Schema handle and Schema transaction that should be passed to Endorser for publishing.
+/// cb: Callback that provides Schema handle and Schema transaction that should be passed to
+/// Endorser for publishing.
 ///
 /// #Returns
 /// Error code as a u32
@@ -141,7 +150,11 @@ pub extern "C" fn vcx_schema_prepare_for_endorser(
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_schema_prepare_for_endorser(command_handle: {}, rc: {}, handle: {}, transaction: {}) source_id: {}", command_handle, err, 0, "", source_id);
+                error!(
+                    "vcx_schema_prepare_for_endorser(command_handle: {}, rc: {}, handle: {}, transaction: {}) \
+                     source_id: {}",
+                    command_handle, err, 0, "", source_id
+                );
                 cb(command_handle, err.into(), 0, ptr::null_mut());
             }
         };
@@ -380,7 +393,9 @@ pub extern "C" fn vcx_schema_get_schema_id(
 /// schema already on the ledger.
 ///
 /// # Example
-/// schema -> {"data":["height","name","sex","age"],"name":"test-licence","payment_txn":null,"schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","source_id":"Test Source ID","state":1,"version":"4.4.4"}
+/// schema -> {"data":["height","name","sex","age"],"name":"test-licence","payment_txn":null,"
+/// schema_id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","source_id":"Test Source
+/// ID","state":1,"version":"4.4.4"}
 ///
 /// #Returns
 /// Error code as a u32
@@ -558,21 +573,25 @@ pub extern "C" fn vcx_schema_get_state(
 mod tests {
     use std::ffi::CString;
 
-    use aries_vcx::common::primitives::credential_definition::PublicEntityStateType;
-    use aries_vcx::global::settings::CONFIG_INSTITUTION_DID;
-    use aries_vcx::utils;
-    use aries_vcx::utils::constants::{DEFAULT_SCHEMA_ID, SCHEMA_ID, SCHEMA_WITH_VERSION};
-    use aries_vcx::utils::devsetup::SetupMocks;
-
-    use crate::api_c::cutils::return_types_u32;
-    use crate::api_c::cutils::timeout::TimeoutUtils;
-    use crate::api_vcx::api_global::settings;
-    use crate::api_vcx::api_global::settings::get_config_value;
-    use crate::api_vcx::api_handle::schema::prepare_schema_for_endorser;
-    use crate::api_vcx::api_handle::schema::tests::prepare_schema_data;
-    use crate::errors::error;
+    use aries_vcx::{
+        common::primitives::credential_definition::PublicEntityStateType,
+        global::settings::CONFIG_INSTITUTION_DID,
+        utils,
+        utils::{
+            constants::{DEFAULT_SCHEMA_ID, SCHEMA_ID, SCHEMA_WITH_VERSION},
+            devsetup::SetupMocks,
+        },
+    };
 
     use super::*;
+    use crate::{
+        api_c::cutils::{return_types_u32, timeout::TimeoutUtils},
+        api_vcx::{
+            api_global::{settings, settings::get_config_value},
+            api_handle::schema::{prepare_schema_for_endorser, tests::prepare_schema_data},
+        },
+        errors::error,
+    };
 
     fn vcx_schema_create_c_closure(name: &str, version: &str, data: &str) -> Result<u32, u32> {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();

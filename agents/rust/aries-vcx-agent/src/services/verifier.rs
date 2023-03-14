@@ -1,20 +1,23 @@
 use std::sync::Arc;
 
-use crate::error::*;
-use crate::http_client::HttpClient;
-use crate::storage::object_cache::ObjectCache;
-use crate::storage::Storage;
-use aries_vcx::common::proofs::proof_request::PresentationRequestData;
-use aries_vcx::core::profile::profile::Profile;
-use aries_vcx::handlers::proof_presentation::verifier::Verifier;
-use aries_vcx::messages::a2a::A2AMessage;
-use aries_vcx::messages::protocols::proof_presentation::presentation::Presentation;
-use aries_vcx::messages::protocols::proof_presentation::presentation_proposal::PresentationProposal;
-use aries_vcx::messages::status::Status;
-use aries_vcx::protocols::proof_presentation::verifier::state_machine::VerifierState;
-use aries_vcx::protocols::SendClosure;
+use aries_vcx::{
+    common::proofs::proof_request::PresentationRequestData,
+    core::profile::profile::Profile,
+    handlers::proof_presentation::verifier::Verifier,
+    messages::{
+        a2a::A2AMessage,
+        protocols::proof_presentation::{presentation::Presentation, presentation_proposal::PresentationProposal},
+        status::Status,
+    },
+    protocols::{proof_presentation::verifier::state_machine::VerifierState, SendClosure},
+};
 
 use super::connection::ServiceConnections;
+use crate::{
+    error::*,
+    http_client::HttpClient,
+    storage::{object_cache::ObjectCache, Storage},
+};
 
 #[derive(Clone)]
 struct VerifierWrapper {

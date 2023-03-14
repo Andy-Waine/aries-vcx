@@ -1,8 +1,10 @@
 use napi_derive::napi;
-use vcx::api_vcx::api_global::pool;
-use vcx::aries_vcx::indy::ledger::pool::PoolConfig;
-use vcx::errors::error::{LibvcxError, LibvcxErrorKind};
-use vcx::serde_json;
+use vcx::{
+    api_vcx::api_global::pool,
+    aries_vcx::indy::ledger::pool::PoolConfig,
+    errors::error::{LibvcxError, LibvcxErrorKind},
+    serde_json,
+};
 
 use crate::error::to_napi_err;
 

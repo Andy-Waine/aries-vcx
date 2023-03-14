@@ -3,13 +3,21 @@ use std::ptr;
 use futures::future::BoxFuture;
 use libc::c_char;
 
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::{set_current_error, set_current_error_vcx};
-use crate::api_c::cutils::runtime::{execute, execute_async};
-use crate::api_c::types::CommandHandle;
-use crate::api_vcx::api_handle::out_of_band;
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
+use crate::{
+    api_c::{
+        cutils::{
+            cstring::CStringUtils,
+            current_error::{set_current_error, set_current_error_vcx},
+            runtime::{execute, execute_async},
+        },
+        types::CommandHandle,
+    },
+    api_vcx::api_handle::out_of_band,
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 #[no_mangle]
 pub extern "C" fn vcx_out_of_band_sender_create(
@@ -435,12 +443,23 @@ pub extern "C" fn vcx_out_of_band_receiver_connection_exists(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match out_of_band::connection_exists(handle, &conn_handles).await {
             Ok((conn_handle, found_one)) => {
-                trace!("vcx_out_of_band_receiver_connection_exists_cb(command_handle: {}, rc: {}, conn_handle: {}, found_one: {})", command_handle, error::SUCCESS_ERR_CODE, conn_handle, found_one);
+                trace!(
+                    "vcx_out_of_band_receiver_connection_exists_cb(command_handle: {}, rc: {}, conn_handle: {}, \
+                     found_one: {})",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    conn_handle,
+                    found_one
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, conn_handle, found_one);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_out_of_band_receiver_connection_exists_cb(command_handle: {}, rc: {}, conn_handle: {}, found_one: {})", command_handle, err, 0, false);
+                error!(
+                    "vcx_out_of_band_receiver_connection_exists_cb(command_handle: {}, rc: {}, conn_handle: {}, \
+                     found_one: {})",
+                    command_handle, err, 0, false
+                );
                 cb(command_handle, err.into(), 0, false);
             }
         }

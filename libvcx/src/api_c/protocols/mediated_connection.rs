@@ -1,20 +1,25 @@
 use std::ptr;
 
+use aries_vcx::protocols::mediated_connection::pairwise_info::PairwiseInfo;
 use futures::future::BoxFuture;
 use libc::c_char;
 
-use crate::api_c::cutils;
-use aries_vcx::protocols::mediated_connection::pairwise_info::PairwiseInfo;
-
-use crate::api_c::types::CommandHandle;
-use crate::api_vcx::api_handle::mediated_connection;
-use crate::api_vcx::api_handle::mediated_connection::*;
-use crate::errors::error;
-use crate::errors::error::{LibvcxError, LibvcxErrorKind};
-
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::api_c::cutils::current_error::{set_current_error, set_current_error_vcx};
-use crate::api_c::cutils::runtime::{execute, execute_async};
+use crate::{
+    api_c::{
+        cutils,
+        cutils::{
+            cstring::CStringUtils,
+            current_error::{set_current_error, set_current_error_vcx},
+            runtime::{execute, execute_async},
+        },
+        types::CommandHandle,
+    },
+    api_vcx::api_handle::{mediated_connection, mediated_connection::*},
+    errors::{
+        error,
+        error::{LibvcxError, LibvcxErrorKind},
+    },
+};
 
 /*
     Tha API represents a pairwise connection with another identity owner.
@@ -269,7 +274,8 @@ pub extern "C" fn vcx_connection_create(
 ///
 /// source_id: institution's personal identification for the connection
 ///
-/// invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
+/// invite_details: A string representing a json object which is provided by an entity that wishes
+/// to make a connection.
 ///
 /// cb: Callback that provides connection handle and error status of request
 ///
@@ -369,12 +375,23 @@ pub extern "C" fn vcx_connection_create_with_connection_request_v2(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match create_with_request_v2(&request, pw_info).await {
             Ok(handle) => {
-                trace!("vcx_connection_create_with_connection_request_v2_cb(command_handle: {}, rc: {}, handle: {:?}) source_id: {}", command_handle, error::SUCCESS_ERR_CODE, handle, source_id);
+                trace!(
+                    "vcx_connection_create_with_connection_request_v2_cb(command_handle: {}, rc: {}, handle: {:?}) \
+                     source_id: {}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    handle,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, handle);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_create_with_connection_request_v2_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}", command_handle, err, 0, source_id);
+                error!(
+                    "vcx_connection_create_with_connection_request_v2_cb(command_handle: {}, rc: {}, handle: {}) \
+                     source_id: {}",
+                    command_handle, err, 0, source_id
+                );
                 cb(command_handle, err.into(), 0);
             }
         };
@@ -392,7 +409,8 @@ pub extern "C" fn vcx_connection_create_with_connection_request_v2(
 ///
 /// connection_handle: Connection handle that identifies connection object
 ///
-/// connection_options: Provides details indicating if the connection will be established by text or QR Code
+/// connection_options: Provides details indicating if the connection will be established by text or
+/// QR Code
 ///
 /// # Examples connection_options ->
 /// "{"connection_type":"SMS","phone":"123","use_public_did":true}"
@@ -433,13 +451,25 @@ pub extern "C" fn vcx_connection_connect(
         match connect(connection_handle).await {
             Ok(invitation) => {
                 let invitation = invitation.unwrap_or(String::from("{}"));
-                trace!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {}", command_handle, connection_handle, error::SUCCESS_ERR_CODE, invitation, source_id);
+                trace!(
+                    "vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), \
+                     source_id: {}",
+                    command_handle,
+                    connection_handle,
+                    error::SUCCESS_ERR_CODE,
+                    invitation,
+                    source_id
+                );
                 let invitation = CStringUtils::string_to_cstring(invitation);
                 cb(command_handle, error::SUCCESS_ERR_CODE, invitation.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {})", command_handle, connection_handle, err, "null", source_id);
+                error!(
+                    "vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, \
+                     source_id: {})",
+                    command_handle, connection_handle, err, "null", source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -471,13 +501,25 @@ pub extern "C" fn vcx_connection_get_thread_id(
     execute(move || {
         match get_thread_id(connection_handle) {
             Ok(tid) => {
-                trace!("vcx_connection_get_thread_id_cb(command_handle: {}, connection_handle: {}, rc: {}, thread_id: {}), source_id: {:?}", command_handle, connection_handle, error::SUCCESS_ERR_CODE, tid, source_id);
+                trace!(
+                    "vcx_connection_get_thread_id_cb(command_handle: {}, connection_handle: {}, rc: {}, thread_id: \
+                     {}), source_id: {:?}",
+                    command_handle,
+                    connection_handle,
+                    error::SUCCESS_ERR_CODE,
+                    tid,
+                    source_id
+                );
                 let tid = CStringUtils::string_to_cstring(tid);
                 cb(command_handle, error::SUCCESS_ERR_CODE, tid.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_get_thread_id_cb(command_handle: {}, connection_handle: {}, rc: {}, thread_id: {}), source_id: {:?}", command_handle, connection_handle, err, "null", source_id);
+                error!(
+                    "vcx_connection_get_thread_id_cb(command_handle: {}, connection_handle: {}, rc: {}, thread_id: \
+                     {}), source_id: {:?}",
+                    command_handle, connection_handle, err, "null", source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -520,13 +562,25 @@ pub extern "C" fn vcx_connection_serialize(
     execute(move || {
         match to_string(connection_handle) {
             Ok(json) => {
-                trace!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}", command_handle, connection_handle, error::SUCCESS_ERR_CODE, json, source_id);
+                trace!(
+                    "vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), \
+                     source_id: {:?}",
+                    command_handle,
+                    connection_handle,
+                    error::SUCCESS_ERR_CODE,
+                    json,
+                    source_id
+                );
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS_ERR_CODE, msg.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}", command_handle, connection_handle, err, "null", source_id);
+                error!(
+                    "vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), \
+                     source_id: {:?}",
+                    command_handle, connection_handle, err, "null", source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -542,7 +596,8 @@ pub extern "C" fn vcx_connection_serialize(
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_data: json string representing a connection object. Is an output of `vcx_connection_serialize` function.
+/// connection_data: json string representing a connection object. Is an output of
+/// `vcx_connection_serialize` function.
 ///
 /// cb: Callback that provides credential handle and provides error status
 ///
@@ -634,12 +689,28 @@ pub extern "C" fn vcx_connection_update_state(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match update_state(connection_handle).await {
             Ok(state) => {
-                trace!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}", command_handle, error::SUCCESS_ERR_CODE, connection_handle, get_state(connection_handle), source_id);
+                trace!(
+                    "vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), \
+                     source_id: {:?}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    connection_handle,
+                    get_state(connection_handle),
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, state);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}", command_handle, err, connection_handle, get_state(connection_handle), source_id);
+                error!(
+                    "vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), \
+                     source_id: {:?}",
+                    command_handle,
+                    err,
+                    connection_handle,
+                    get_state(connection_handle),
+                    source_id
+                );
                 cb(command_handle, err.into(), 0);
             }
         };
@@ -685,12 +756,28 @@ pub extern "C" fn vcx_connection_update_state_with_message(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match update_state_with_message(connection_handle, &message).await {
             Ok(state) => {
-                trace!("vcx_connection_update_state_with_message_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}", command_handle, error::SUCCESS_ERR_CODE, connection_handle, get_state(connection_handle), source_id);
+                trace!(
+                    "vcx_connection_update_state_with_message_cb(command_handle: {}, rc: {}, connection_handle: {}, \
+                     state: {}), source_id: {:?}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    connection_handle,
+                    get_state(connection_handle),
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE, state);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_update_state_with_message_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}", command_handle, err, connection_handle, get_state(connection_handle), source_id);
+                error!(
+                    "vcx_connection_update_state_with_message_cb(command_handle: {}, rc: {}, connection_handle: {}, \
+                     state: {}), source_id: {:?}",
+                    command_handle,
+                    err,
+                    connection_handle,
+                    get_state(connection_handle),
+                    source_id
+                );
                 cb(command_handle, err.into(), 0);
             }
         };
@@ -736,12 +823,23 @@ pub extern "C" fn vcx_connection_handle_message(
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match handle_message(connection_handle, &message).await {
             Ok(()) => {
-                trace!("vcx_connection_handle_message_cb(command_handle: {}, rc: {}, connection_handle: {}), source_id: {:?}", command_handle, error::SUCCESS_ERR_CODE, connection_handle, source_id);
+                trace!(
+                    "vcx_connection_handle_message_cb(command_handle: {}, rc: {}, connection_handle: {}), source_id: \
+                     {:?}",
+                    command_handle,
+                    error::SUCCESS_ERR_CODE,
+                    connection_handle,
+                    source_id
+                );
                 cb(command_handle, error::SUCCESS_ERR_CODE);
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_handle_message_cb(command_handle: {}, rc: {}, connection_handle: {}), source_id: {:?}", command_handle, err, connection_handle, source_id);
+                error!(
+                    "vcx_connection_handle_message_cb(command_handle: {}, rc: {}, connection_handle: {}), source_id: \
+                     {:?}",
+                    command_handle, err, connection_handle, source_id
+                );
                 cb(command_handle, err.into());
             }
         };
@@ -761,7 +859,8 @@ pub extern "C" fn vcx_connection_handle_message(
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// connection_handle: Connection handle that was provided during creation. Used to access connection object
+/// connection_handle: Connection handle that was provided during creation. Used to access
+/// connection object
 ///
 /// cb: Callback that provides most current state of the connection and error status of request
 ///
@@ -785,7 +884,15 @@ pub extern "C" fn vcx_connection_get_state(
     );
 
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
-        trace!("vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}", command_handle, error::SUCCESS_ERR_CODE, connection_handle, get_state(connection_handle), source_id);
+        trace!(
+            "vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: \
+             {:?}",
+            command_handle,
+            error::SUCCESS_ERR_CODE,
+            connection_handle,
+            get_state(connection_handle),
+            source_id
+        );
         let state = get_state(connection_handle);
         cb(command_handle, error::SUCCESS_ERR_CODE, state);
         Ok(())
@@ -816,7 +923,8 @@ pub extern "C" fn vcx_connection_get_state(
 ///         "protocols": [
 ///             {"pid": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0", "roles": "Invitee"},
 ///             ...
-///         ] - optional array. The set of protocol supported by remote side. Is filled after DiscoveryFeatures process was completed.
+///         ] - optional array. The set of protocol supported by remote side. Is filled after
+/// DiscoveryFeatures process was completed.
 /////    }
 ///
 /// #Returns
@@ -843,13 +951,25 @@ pub extern "C" fn vcx_connection_invite_details(
     execute(move || {
         match get_invite_details(connection_handle) {
             Ok(str) => {
-                trace!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}", command_handle, connection_handle, error::SUCCESS_ERR_CODE, str, source_id);
+                trace!(
+                    "vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: \
+                     {}), source_id: {:?}",
+                    command_handle,
+                    connection_handle,
+                    error::SUCCESS_ERR_CODE,
+                    str,
+                    source_id
+                );
                 let msg = CStringUtils::string_to_cstring(str);
                 cb(command_handle, error::SUCCESS_ERR_CODE, msg.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {:?})", command_handle, connection_handle, err, "null", source_id);
+                error!(
+                    "vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, \
+                     source_id: {:?})",
+                    command_handle, connection_handle, err, "null", source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -927,7 +1047,8 @@ pub extern "C" fn vcx_connection_send_message(
     error::SUCCESS_ERR_CODE
 }
 
-/// Send trust ping message to the specified connection to prove that two agents have a functional pairwise channel.
+/// Send trust ping message to the specified connection to prove that two agents have a functional
+/// pairwise channel.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
 /// In other cases it returns ActionNotSupported error.
@@ -1154,7 +1275,15 @@ pub extern "C" fn vcx_connection_verify_signature(
     signature_len: u32,
     cb: Option<extern "C" fn(command_handle_: CommandHandle, err: u32, valid: bool)>,
 ) -> u32 {
-    trace!("vcx_connection_verify_signature: >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}", connection_handle, data_raw, data_len, signature_raw, signature_len);
+    trace!(
+        "vcx_connection_verify_signature: >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: \
+         {:?}, signature_len: {}",
+        connection_handle,
+        data_raw,
+        data_len,
+        signature_raw,
+        signature_len
+    );
 
     check_useful_c_byte_array!(
         data_raw,
@@ -1170,7 +1299,15 @@ pub extern "C" fn vcx_connection_verify_signature(
     );
     check_useful_c_callback!(cb, LibvcxErrorKind::InvalidOption);
 
-    trace!("vcx_connection_verify_signature: entities >>> connection_handle: {}, data_raw: {:?}, data_len: {}, signature_raw: {:?}, signature_len: {}", connection_handle, data_raw, data_len, signature_raw, signature_len);
+    trace!(
+        "vcx_connection_verify_signature: entities >>> connection_handle: {}, data_raw: {:?}, data_len: {}, \
+         signature_raw: {:?}, signature_len: {}",
+        connection_handle,
+        data_raw,
+        data_len,
+        signature_raw,
+        signature_len
+    );
 
     execute_async::<BoxFuture<'static, Result<(), ()>>>(Box::pin(async move {
         match mediated_connection::verify_signature(connection_handle, &data_raw, &signature_raw).await {
@@ -1232,7 +1369,8 @@ pub extern "C" fn vcx_connection_release(connection_handle: u32) -> u32 {
     }
 }
 
-/// Send discovery features message to the specified connection to discover which features it supports, and to what extent.
+/// Send discovery features message to the specified connection to discover which features it
+/// supports, and to what extent.
 ///
 /// Note that this function is useful in case `aries` communication method is used.
 /// In other cases it returns ActionNotSupported error.
@@ -1333,8 +1471,8 @@ pub extern "C" fn vcx_connection_send_discovery_features(
 ///             "recipientKeys": array<str> - Recipient keys
 ///             "routingKeys": array<str> - Routing keys
 ///             "serviceEndpoint": <str> - Endpoint
-///             "protocols": array<str> - The set of protocol supported by side. Is filled after DiscoveryFeatures process was completed.
-///          }
+///             "protocols": array<str> - The set of protocol supported by side. Is filled after
+/// DiscoveryFeatures process was completed.          }
 ///    }
 ///
 /// #Returns
@@ -1419,13 +1557,25 @@ pub extern "C" fn vcx_connection_get_pw_did(
     execute(move || {
         match get_pw_did(connection_handle) {
             Ok(json) => {
-                trace!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}", command_handle, connection_handle, error::SUCCESS_ERR_CODE, json, source_id);
+                trace!(
+                    "vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), \
+                     source_id: {:?}",
+                    command_handle,
+                    connection_handle,
+                    error::SUCCESS_ERR_CODE,
+                    json,
+                    source_id
+                );
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS_ERR_CODE, msg.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), source_id: {:?}", command_handle, connection_handle, err, "null", source_id);
+                error!(
+                    "vcx_connection_get_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, pw_did: {}), \
+                     source_id: {:?}",
+                    command_handle, connection_handle, err, "null", source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -1468,13 +1618,25 @@ pub extern "C" fn vcx_connection_get_their_pw_did(
     execute(move || {
         match get_their_pw_did(connection_handle) {
             Ok(json) => {
-                trace!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}", command_handle, connection_handle, error::SUCCESS_ERR_CODE, json, source_id);
+                trace!(
+                    "vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, \
+                     their_pw_did: {}), source_id: {:?}",
+                    command_handle,
+                    connection_handle,
+                    error::SUCCESS_ERR_CODE,
+                    json,
+                    source_id
+                );
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS_ERR_CODE, msg.as_ptr());
             }
             Err(err) => {
                 set_current_error_vcx(&err);
-                error!("vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, their_pw_did: {}), source_id: {:?}", command_handle, connection_handle, err, "null", source_id);
+                error!(
+                    "vcx_connection_get_their_pw_did_cb(command_handle: {}, connection_handle: {}, rc: {}, \
+                     their_pw_did: {}), source_id: {:?}",
+                    command_handle, connection_handle, err, "null", source_id
+                );
                 cb(command_handle, err.into(), ptr::null_mut());
             }
         };
@@ -1583,28 +1745,32 @@ pub extern "C" fn vcx_connection_messages_download(
 #[cfg(test)]
 #[cfg(feature = "general_test")]
 mod tests {
-    use std::ffi::CString;
-    use std::ptr;
+    use std::{ffi::CString, ptr};
 
+    use aries_vcx::{
+        agency_client::testing::mocking::AgencyMockDecrypted,
+        utils::{
+            constants::{DELETE_CONNECTION_DECRYPTED_RESPONSE, GET_MESSAGES_DECRYPTED_RESPONSE},
+            devsetup::SetupMocks,
+            mockdata::mockdata_mediated_connection::{
+                ARIES_CONNECTION_ACK, ARIES_CONNECTION_REQUEST, DEFAULT_SERIALIZED_CONNECTION,
+            },
+        },
+    };
     use serde_json::Value;
 
-    use aries_vcx::agency_client::testing::mocking::AgencyMockDecrypted;
-    use aries_vcx::utils::constants::{DELETE_CONNECTION_DECRYPTED_RESPONSE, GET_MESSAGES_DECRYPTED_RESPONSE};
-    use aries_vcx::utils::devsetup::SetupMocks;
-    use aries_vcx::utils::mockdata::mockdata_mediated_connection::{
-        ARIES_CONNECTION_ACK, ARIES_CONNECTION_REQUEST, DEFAULT_SERIALIZED_CONNECTION,
-    };
-
-    use crate::api_c::cutils::return_types_u32;
-    use crate::api_c::cutils::timeout::TimeoutUtils;
-    use crate::api_vcx::api_handle::mediated_connection::tests::{
-        build_test_connection_inviter_invited, build_test_connection_inviter_null,
-        build_test_connection_inviter_requested,
-    };
-    use crate::api_vcx::VcxStateType;
-    use crate::errors::error::{LibvcxErrorKind, SUCCESS_ERR_CODE};
-
     use super::*;
+    use crate::{
+        api_c::cutils::{return_types_u32, timeout::TimeoutUtils},
+        api_vcx::{
+            api_handle::mediated_connection::tests::{
+                build_test_connection_inviter_invited, build_test_connection_inviter_null,
+                build_test_connection_inviter_requested,
+            },
+            VcxStateType,
+        },
+        errors::error::{LibvcxErrorKind, SUCCESS_ERR_CODE},
+    };
 
     #[test]
     #[cfg(feature = "general_test")]

@@ -1,5 +1,4 @@
 use napi_derive::napi;
-
 use vcx::api_vcx::api_global::settings;
 
 use crate::error::to_napi_err;

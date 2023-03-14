@@ -1,12 +1,8 @@
-use std::cell::RefCell;
-use std::error::Error;
-use std::ffi::CString;
-use std::ptr;
+use std::{cell::RefCell, error::Error, ffi::CString, ptr};
 
 use libc::c_char;
 
-use crate::api_c::cutils::cstring::CStringUtils;
-use crate::errors::error::LibvcxError;
+use crate::{api_c::cutils::cstring::CStringUtils, errors::error::LibvcxError};
 
 thread_local! {
     pub static CURRENT_ERROR_C_JSON: RefCell<Option<CString>> = RefCell::new(None);

@@ -9,16 +9,22 @@ pub mod utils;
 mod integration_tests {
     use std::sync::Arc;
 
-    use aries_vcx::common::proofs::proof_request::PresentationRequestData;
-    use aries_vcx::common::test_utils::{
-        create_and_store_credential, create_and_store_nonrevocable_credential,
-        create_and_store_nonrevocable_credential_def, create_indy_proof,
+    use aries_vcx::{
+        common::{
+            proofs::proof_request::PresentationRequestData,
+            test_utils::{
+                create_and_store_credential, create_and_store_nonrevocable_credential,
+                create_and_store_nonrevocable_credential_def, create_indy_proof,
+            },
+        },
+        handlers::proof_presentation::prover::Prover,
+        messages::protocols::proof_presentation::presentation_request::PresentationRequest,
+        utils::{
+            constants::{DEFAULT_SCHEMA_ATTRS, TAILS_DIR},
+            devsetup::{init_holder_setup_in_indy_context, SetupProfile},
+            get_temp_dir_path,
+        },
     };
-    use aries_vcx::handlers::proof_presentation::prover::Prover;
-    use aries_vcx::messages::protocols::proof_presentation::presentation_request::PresentationRequest;
-    use aries_vcx::utils::constants::{DEFAULT_SCHEMA_ATTRS, TAILS_DIR};
-    use aries_vcx::utils::devsetup::{init_holder_setup_in_indy_context, SetupProfile};
-    use aries_vcx::utils::get_temp_dir_path;
 
     #[tokio::test]
     async fn test_retrieve_credentials() {
@@ -354,33 +360,38 @@ mod integration_tests {
 #[cfg(test)]
 #[cfg(feature = "agency_pool_tests")]
 mod tests {
-    use aries_vcx::common::test_utils::create_and_store_nonrevocable_credential_def;
+    use aries_vcx::{
+        common::test_utils::create_and_store_nonrevocable_credential_def,
+        handlers::{
+            issuance::holder::Holder,
+            proof_presentation::{prover::Prover, verifier::Verifier},
+        },
+        messages::protocols::{
+            issuance::credential_offer::CredentialOffer, proof_presentation::presentation_request::PresentationRequest,
+        },
+        protocols::{
+            issuance::{holder::state_machine::HolderState, issuer::state_machine::IssuerState},
+            proof_presentation::prover::state_machine::ProverState,
+        },
+        utils::devsetup::*,
+    };
     use serde_json::Value;
 
-    use aries_vcx::handlers::issuance::holder::Holder;
-    use aries_vcx::handlers::proof_presentation::prover::Prover;
-    use aries_vcx::handlers::proof_presentation::verifier::Verifier;
-    use aries_vcx::messages::protocols::issuance::credential_offer::CredentialOffer;
-    use aries_vcx::messages::protocols::proof_presentation::presentation_request::PresentationRequest;
-    use aries_vcx::protocols::issuance::holder::state_machine::HolderState;
-    use aries_vcx::protocols::issuance::issuer::state_machine::IssuerState;
-    use aries_vcx::protocols::proof_presentation::prover::state_machine::ProverState;
-    use aries_vcx::utils::devsetup::*;
-
-    use crate::utils::devsetup_agent::test_utils::{create_test_alice_instance, Faber, PayloadKinds};
-    use crate::utils::scenarios::test_utils::{
-        _create_address_schema, _exchange_credential, _exchange_credential_with_proposal, accept_cred_proposal,
-        accept_cred_proposal_1, accept_offer, accept_proof_proposal, attr_names,
-        create_and_send_nonrevocable_cred_offer, create_connected_connections, create_proof, decline_offer,
-        generate_and_send_proof, issue_address_credential, prover_select_credentials,
-        prover_select_credentials_and_fail_to_generate_proof, prover_select_credentials_and_send_proof,
-        receive_proof_proposal_rejection, reject_proof_proposal, retrieved_to_selected_credentials_simple,
-        send_cred_proposal, send_cred_proposal_1, send_cred_req, send_credential, send_proof_proposal,
-        send_proof_proposal_1, send_proof_request, verifier_create_proof_and_send_request, verify_proof,
-    };
-    use crate::utils::test_macros::ProofStateType;
-
     use super::*;
+    use crate::utils::{
+        devsetup_agent::test_utils::{create_test_alice_instance, Faber, PayloadKinds},
+        scenarios::test_utils::{
+            _create_address_schema, _exchange_credential, _exchange_credential_with_proposal, accept_cred_proposal,
+            accept_cred_proposal_1, accept_offer, accept_proof_proposal, attr_names,
+            create_and_send_nonrevocable_cred_offer, create_connected_connections, create_proof, decline_offer,
+            generate_and_send_proof, issue_address_credential, prover_select_credentials,
+            prover_select_credentials_and_fail_to_generate_proof, prover_select_credentials_and_send_proof,
+            receive_proof_proposal_rejection, reject_proof_proposal, retrieved_to_selected_credentials_simple,
+            send_cred_proposal, send_cred_proposal_1, send_cred_req, send_credential, send_proof_proposal,
+            send_proof_proposal_1, send_proof_request, verifier_create_proof_and_send_request, verify_proof,
+        },
+        test_macros::ProofStateType,
+    };
 
     #[tokio::test]
     async fn test_proof_should_be_validated() {
